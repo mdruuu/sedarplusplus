@@ -1,0 +1,23 @@
+{
+  "manifest_version": 3,
+  "name": "SedarPlusplus",
+  "version": "0.1",
+  "description": "Make SEDAR+ suck a little less",
+  "permissions": ["activeTab", "scripting", "storage", "tab"],
+  "host_permissions": ["http://www.sedarplus.ca/*", "https://www.sedarplus.ca/*"],
+  "action": {
+    "default_popup": "popup.html",
+    "default_icon": {
+      "48": "sedarppicon.png"
+    }
+  },
+  "background": {
+    "service_worker": "background.js"
+  },
+  "content_scripts": [
+    {
+      "matches": ["https://www.sedarplus.ca/*"],
+      "js": ["contentScript.js"]
+    }
+  ]
+}
