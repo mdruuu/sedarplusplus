@@ -3,30 +3,68 @@
   <head>
     <style>
       body {
-        width: 300px;
+        width: 280px;
         margin: 5px;
         display: flex;
         flex-direction: column;
-        align-items: left;
         overflow: auto;
+      }
+      .input-grid {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+      }
+      .input-row {
+        width: 100%;
+      }
+      #documentType {
+        width: 100%;
       }
       .input-row {
         display: flex;
-        justify-content: center;
+        justify-content: space-between;
         align-items: center;
       }
       label {
         margin-right: 5px;
-      }      
+      }
+      #statusPane {
+        border: 1px solid black; /* Add a border around the statusPane */
+        padding: 10px; /* Add some padding */
+        margin-top: 10px; /* Add some margin at the top */
+      }
+      #statusPane h2 {
+        text-align: center; /* Center the 'System Message' text */
+      }
     </style>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-multiselect/0.9.15/css/bootstrap-multiselect.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-multiselect/0.9.15/js/bootstrap-multiselect.min.js"></script>
   </head>
   <body>
-    <div class="input-row">
-      <!-- <label for="companyName">Company Name: </label> -->
-      <input type="text" id="companyName" placeholder="Name">     
-      <button id="searchBtn">Search</button>
+    <div class="input-grid">
+      <div class="input-row">
+        <!-- <label for="companyName">Company Name: </label> -->
+        <input type="text" id="companyName" placeholder="Name">     
+        <button id="searchBtn">Search</button>      
+      </div>
+      <div class="input-row">
+        <select id="documentType" multiple="multiple">
+          <option value="all" selected>All</option>
+          <option value="financials">Financials</option>
+          <option value="mda">MD&A</option>
+          <option value="aif">AIF</option>
+          <option value="circular">Circular</option>
+        </select>
+      </div>
     </div>
-    <div id="statusPane"></div>
+    <div id="statusPane">
+      <span>Type in comapny name and hit enter / search.</span><br>
+      <span>Select type of document you want to search for. Default is all.</span><br>
+      <span>Hold Ctrl to select multiple document types.</span> <!-- Add 'System Message' text -->
+    </div>
     <script src="popup.js"></script>
   </body>
 </html>

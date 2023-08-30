@@ -1,5 +1,9 @@
 window.onload = function() {
   document.getElementById('companyName').focus();
+  $('#documentType').multiselect({
+    includeSelectAllOption: true,
+    enableClickableOptGroups: true
+  });
 };
 
 
