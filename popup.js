@@ -8,7 +8,7 @@ console.log = function (message) {
     oldLog.apply(console, arguments);
     let statusPane = document.getElementById('statusPane');
     if (statusPane) {
-        statusPane.innerHTML += '<p>' + message + '</p>';
+        statusPane.innerHTML += '<span>' + message + '</span><br>';
     }
 };
 
@@ -16,7 +16,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     if (request.action === 'log') {
         let statusPane = document.getElementById('statusPane');
         if (statusPane) {
-            statusPane.innerHTML += '<p>' + request.message + '</p>';
+            statusPane.innerHTML += '<span>' + request.message + '</span><br>';
         }
     }
 });
@@ -31,6 +31,11 @@ document.getElementById('companyName').addEventListener('keypress', function (e)
 
 
 function performSearch() {
+  let statusPane = document.getElementById('statusPane');
+  if (statusPane) {
+    statusPane.innerHTML = '';
+  }
+
   const companyName = document.getElementById('companyName').value;
   console.log('Search Request: ', companyName)
   console.log('Navigating to Sedar+.')

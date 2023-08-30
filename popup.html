@@ -2,13 +2,30 @@
 <html>
   <head>
     <style>
-      /* Add your custom styles here */
+      body {
+        width: 300px;
+        margin: 5px;
+        display: flex;
+        flex-direction: column;
+        align-items: left;
+        overflow: auto;
+      }
+      .input-row {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+      }
+      label {
+        margin-right: 5px;
+      }      
     </style>
   </head>
   <body>
-    <label for="companyName">Company Name:</label>
-    <input type="text" id="companyName" />
-    <button id="searchBtn">Search</button>
+    <div class="input-row">
+      <!-- <label for="companyName">Company Name: </label> -->
+      <input type="text" id="companyName" placeholder="Name">     
+      <button id="searchBtn">Search</button>
+    </div>
     <div id="statusPane"></div>
     <script src="popup.js"></script>
   </body>

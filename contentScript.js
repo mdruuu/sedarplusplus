@@ -16,22 +16,24 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                         const companyField = document.querySelector("#QueryString");
                         if (companyField) {
                             console.log('Search Field Found.');
-                            console.log(`Searching for ${result.companyName}`)
+                            console.log(`Searching for: ${result.companyName}`)
                             companyField.value = result.companyName;
                             setTimeout(() => { const searchButton = document.querySelector(".searchButton.appIconSearch.keepInteractiveOnSubmit");
                             if (searchButton) {
                                 searchButton.click();
                                 console.log('Search Button Clicked.');
-                            }}, 500);
+                            }}, 750);
                             setTimeout(() => {
                                 const links = document.querySelectorAll(".searchReportingIssuers-results-page-entitiesRecord-entityNameBox-viewEntity.appMenu.appMenuItem.appMenuDepth0.viewInstanceUpdateStackPush.appReadOnly.appIndex0");
                                 console.log('Clicking on the First Company Link');
                                 console.log(Array.from(links).map(link => link.outerHTML));
-                                if (links.length > 0) {
+                                if (links.length > 5) {
+                                    console.log('Too many results. Likely due to page loading issue. Try again.');
+                                } else if (links.length > 0) {
                                     const firstLink = links[0];                                 
                                     firstLink.click();
                                 } else {
-                                    console.log('No Results Found');
+                                    console.log('No Results Found. Check name and try again.');
                                 }
                                 }, 2000);
                             }
