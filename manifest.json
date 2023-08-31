@@ -3,7 +3,7 @@
   "name": "SedarPlusplus",
   "version": "0.1",
   "description": "Make SEDAR+ suck a little less",
-  "permissions": ["activeTab", "scripting", "storage", "tab"],
+  "permissions": ["activeTab", "scripting", "storage", "tab", "webNavigation"],
   "host_permissions": ["http://www.sedarplus.ca/*", "https://www.sedarplus.ca/*"],
   "action": {
     "default_popup": "popup.html",

@@ -5,9 +5,23 @@ console.log = function (message) {
     chrome.runtime.sendMessage({action: "log", message: message});
 };
 
+
+// let selectValueMap = {
+//     "Financials": ['ANNUAL_FINANCIAL_STATEMENTS', 'INTERIM_FINANCIAL_STATEMENTSREPORT'],
+//     "MD&A": ['ANNUAL_MDA', 'INTERIM_MDA'],
+//     "ARAIF": ["ANNUAL_REPORT", "ANNUAL_INFORMATION_FORMS"], 
+//     "News_Release": ["NEWS_RELEASES", "MATERIAL_CHANGE_REPORT"],
+//     "Prospectus": ["LONG_FORM_PROSPECTUS", "LISTING_APPLICATION", "SHORT_FORM_PROSPECTUS_NI_44101", "SHELF_PROSPECTUS_NI_44102",],
+//     "USER1": ["USER1"]
+// }
+
+
+
+
+
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     if (request.action !== 'search') {
-        chrome.storage.local.get(['searchRequested', 'companyName'], function(result) {
+        chrome.storage.local.get(['searchRequested', 'companyName', 'selectedValues'], function(result) {
             if (result.searchRequested) {
                 switch (request.action) {
                     case 'page_loaded0':
@@ -49,16 +63,33 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                         break;
                     case 'page_loaded2':
                         console.log('Company Documents Page Loaded');
+                        
+                        // Do filingtype entry here. 
+                        let select = document.getElementById('FilingType');
+
+                        if (result.selectedValues !== "All") {
+                            // let valuesToSelect = selectValueMap[result.selectedValues];
+                            console.log(result.selectedValues)
+                            for(let i = 0; i < select.options.length; i++) {
+                                if(result.selectedValues.includes(select.options[i].value)) {
+                                    console.log(`Found Option ${i}`);
+                                    select.options[i].selected = true;
+                                }
+                            } 
+                        }
+                        let event = new Event('change');
+                        select.dispatchEvent(event);
+
                         let clickCount = 0;
                         const intervalId = setInterval(() => {
                             const xpath = "//a[.//span[contains(text(), 'Submitted date')]]";
                             const matchingElement = document.evaluate(xpath, document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null).singleNodeValue;
                             if (matchingElement) {
                                 matchingElement.click();
-                                console.log(`Sorting List. Need 2 Clicks. #${++clickCount}`);
+                                console.log(`Sorting List. Need 2 Clicks. Clicking...${++clickCount}`);
                                 if (clickCount >= 2) {
                                     clearInterval(intervalId);
-                                }
+                                }   
                             } else {
                                 console.log('No element with "Submitted date" found');
                                 clearInterval(intervalId);

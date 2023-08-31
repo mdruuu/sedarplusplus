@@ -41,25 +41,38 @@ function performSearch() {
   }
 
   const companyName = document.getElementById('companyName').value;
-  console.log('Search Request: ', companyName)
+  console.log('Search Request Received.')
   console.log('Navigating to Sedar+.')
   chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
     const tabId = tabs[0].id;
-    chrome.tabs.update(tabId, { url: 'https://www.sedarplus.ca/csa-party/service/create.html?targetAppCode=csa-party&service=searchReportingIssuers&_locale=en' })
-    chrome.tabs.sendMessage(tabId, { action: 'search', companyName });
-    chrome.runtime.sendMessage({ action: 'reset_count' });
+    const targetUrl = 'https://www.sedarplus.ca/csa-party/service/create.html?targetAppCode=csa-party&service=searchReportingIssuers&_locale=en'
+    const landingUrl = 'https://www.sedarplus.ca/landingpage/'
+
+    chrome.tabs.update(tabId, { url: targetUrl });
+    setTimeout(() => {
+      chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+        if (tabs[0].url === landingUrl) {
+          console.log("Sedar+ Rerouted us. Reloading.");
+          chrome.tabs.update(tabId, { url: targetUrl });
+        } else {
+          console.log("Correct site");
+        }
+      });
+    }, 500);
     
-    // Clear the local storage
     chrome.storage.local.clear(function() {
+      console.log('Storage Cleared')
       var error = chrome.runtime.lastError;
       if (error) {
         console.error(error);
       } else {
         // Set the searchRequested and companyName in local storage
-        chrome.storage.local.set({ searchRequested: true, companyName: companyName });
-        };
-      });
-    
-    // Open a new tab with the specified URL
+        let selectedValues = $('#documentType').multiselect('getSelectedValues');
+        chrome.storage.local.set({ searchRequested: true, companyName: companyName, selectedValues: selectedValues });
+      };
+    }); 
+    console.log('Sending Message')
+    chrome.tabs.sendMessage(tabId, { action: 'search', companyName});
+    chrome.runtime.sendMessage({ action: 'reset_count' });
   });
 }

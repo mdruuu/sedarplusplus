@@ -52,18 +52,23 @@
       </div>
       <div class="input-row">
         <select id="documentType" multiple="multiple">
-          <option value="all" selected>All</option>
-          <option value="financials">Financials</option>
-          <option value="mda">MD&A</option>
-          <option value="aif">AIF</option>
-          <option value="circular">Circular</option>
+          <option value="All" selected>All</option>
+          <option value="ANNUAL_FINANCIAL_STATEMENTS">Annual Financials</option>
+          <option value="INTERIM_FINANCIAL_STATEMENTSREPORT">Interim Financials</option>
+          <option value="ANNUAL_MDA">Annual MD&A</option>
+          <option value="INTERIM_MDA">Interim MD&A</option>
+          <option value="NEWS_RELEASES">News Releases</option>
+          <option value="MANAGEMENT_PROXY_MATERIALS">Proxy / Circular</option>
+          <option value="ANNUAL_INFORMATION_FORMS">AIF</option>
+          <option value="ANNUAL_REPORT">Annual Report</option>
+          <option value="LONG_FORM_PROSPECTUS">Prospectus</option>
         </select>
       </div>
     </div>
     <div id="statusPane">
       <span>Type in comapny name and hit enter / search.</span><br>
-      <span>Select type of document you want to search for. Default is all.</span><br>
-      <span>Hold Ctrl to select multiple document types.</span> <!-- Add 'System Message' text -->
+      <span>Select type of document you want to search for.</span><br>
+      <span>Note that currently, SEDAR multi-doc filter is broken. Until then, you can only filter for a single document type at a time.</span>
     </div>
     <script src="popup.js"></script>
   </body>
