@@ -39,7 +39,9 @@ function performSearch() {
   if (statusPane) {
     statusPane.innerHTML = '';
   }
-
+  chrome.storage.loca.clear(function() {
+    console.log("Storage Cleared.")
+  });
   const companyName = document.getElementById('companyName').value;
   console.log('Search Request Received.')
   console.log('Navigating to Sedar+.')
@@ -60,17 +62,8 @@ function performSearch() {
       });
     }, 500);
     
-    chrome.storage.local.clear(function() {
-      console.log('Storage Cleared')
-      var error = chrome.runtime.lastError;
-      if (error) {
-        console.error(error);
-      } else {
-        // Set the searchRequested and companyName in local storage
-        let selectedValues = $('#documentType').multiselect('getSelectedValues');
-        chrome.storage.local.set({ searchRequested: true, companyName: companyName, selectedValues: selectedValues });
-      };
-    }); 
+    let selectedValues = $('#documentType').multiselect('getSelectedValues');
+    chrome.storage.local.set({ searchRequested: true, companyName: companyName, selectedValues: selectedValues }); 
     console.log('Sending Message')
     chrome.tabs.sendMessage(tabId, { action: 'search', companyName});
     chrome.runtime.sendMessage({ action: 'reset_count' });
