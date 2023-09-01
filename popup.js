@@ -51,17 +51,19 @@ function performSearch() {
     const landingUrl = 'https://www.sedarplus.ca/landingpage/'
 
     chrome.tabs.update(tabId, { url: targetUrl }, function(tab) {
+      setTimeout(function() {
       chrome.tabs.query({active: true, currentWindow: true}, function(tabs) {
         if (tabs[0].url === landingUrl) {
           console.log("Sedar+ Rerouted us. Reloading.");
           chrome.tabs.update(tabId, { url: targetUrl }, function(tab) {
-            sendMessage(tabId);
+          sendMessage(tabId);
           });
         } else {
           console.log("Correct site");
           sendMessage(tabId);
         }
-      });
+      }); 
+    }, 500);
     });
   })};
 
