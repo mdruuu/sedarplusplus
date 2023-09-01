@@ -78,7 +78,10 @@ function sendMessage(tabId) {
   console.log('Sending Message')
   const companyName = document.getElementById('companyName').value;    
   let selectedValues = $('#documentType').multiselect('getSelectedValues');
-  chrome.storage.local.set({ searchRequested: true, companyName: companyName, selectedValues: selectedValues }); 
-  chrome.tabs.sendMessage(tabId, { action: 'search', companyName: companyName});
-  chrome.runtime.sendMessage({ action: 'reset_count' });
+  chrome.storage.local.set({ searchRequested: true, companyName: companyName, selectedValues: selectedValues }, function() {
+    chrome.tabs.sendMessage(tabId, { action: 'search', companyName: companyName});
+    chrome.runtime.sendMessage({ action: 'reset_count' });
+    console.log('Message Sent');
+  }); 
 }
+
