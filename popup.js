@@ -34,15 +34,6 @@ document.getElementById('companyName').addEventListener('keypress', function (e)
 });
 
 
-// What do I need to do on click? 
-// Go to targetUrl.
-// Check if we've arrived at targetUrl. If we did, continue. If not, load targetUrl.
-// Sometimes, you're brought to https://www.sedarplus.ca/landingpage/
-// Clear local storage.
-// send message: 'search' and companyName
-// send 'reset count'
-
-
 function performSearch() {
   // clear statusPane
   let statusPane = document.getElementById('statusPane');
@@ -77,7 +68,8 @@ function performSearch() {
 function sendMessage(tabId) {
   console.log('Sending Message')
   const companyName = document.getElementById('companyName').value;    
-  let selectedValues = $('#documentType').multiselect('getSelectedValues');
+  let selectElement = document.getElementById('documentType');
+  let selectedValues = Array.from(selectElement.selectedOptions).map(option => option.value);
   chrome.storage.local.set({ searchRequested: true, companyName: companyName, selectedValues: selectedValues }, function() {
     chrome.tabs.sendMessage(tabId, { action: 'search', companyName: companyName});
     chrome.runtime.sendMessage({ action: 'reset_count' });
