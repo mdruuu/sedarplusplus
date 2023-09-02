@@ -25,7 +25,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     }
 
     if (request.action === 'update_links') {
-        chrome.storage.local.set({ links: request.data }, function() {
+        chrome.storage.local.set({ html: request.data }, function() {
           chrome.tabs.create({ url: chrome.runtime.getURL("links.html") });
         });
     }
@@ -39,15 +39,6 @@ document.getElementById('companyName').addEventListener('keypress', function (e)
         performSearch();
     }
 });
-
-function updateLinks() {
-  document.querySelectorAll('a').forEach(anchor => {
-    anchor.addEventListener('click', function(e) {
-        e.preventDefault();
-        chrome.tabs.create({ url: this.href });
-    });
-});
-}
 
 function performSearch() {
   // clear statusPane
