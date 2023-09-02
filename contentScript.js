@@ -87,23 +87,9 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                                 if (clickCount >= 2) {
                                     clearInterval(intervalId);
                                     console.log('Grabbing HTML elements')
-                                    let rows = document.querySelectorAll('.appTblRow'); 
-                                    let data = [];
-
-                                    for (let row of rows) {
-                                        let linkElement = row.querySelector('.appTblCell2 a.appDocumentView.appResourceLink.appDocumentLink');
-                                        let dateElement = row.querySelector('.appAttrDateTime .appAttrValue span[aria-hidden="true"]');
-
-                                        if (linkElement && dateElement) {
-                                            let link = linkElement.href;
-                                            let text = linkElement.textContent;
-                                            let date = dateElement.textContent;
-                                            data.push({text: text, link: link, date: date})
-                                        }
-                                        console.log('data grabbed')
-                                        chrome.runtime.sendMessage({action: "update_statusPane", data: data});
-                                    }}}}, 2000);
-                                
+                                    setTimeout(grabLinks, 2000);
+                                    }}}, 2000);
+  
                         break;
                     default: {
                         console.log('Unknown action:', request.action);
@@ -111,3 +97,22 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                 }
             }})}})
 
+
+function grabLinks() {
+    let rows = document.querySelectorAll('.appTblRow'); 
+    let data = [];
+
+    for (let row of rows) {
+        let linkElement = row.querySelector('.appTblCell2 a.appDocumentView.appResourceLink.appDocumentLink');
+        let dateElement = row.querySelector('.appAttrDateTime .appAttrValue span[aria-hidden="true"]');
+
+        if (linkElement && dateElement) {
+            let link = linkElement.href;
+            let text = linkElement.textContent;
+            let date = dateElement.textContent;
+            data.push({text: text, link: link, date: date})
+        };
+        console.log('data grabbed');
+        chrome.runtime.sendMessage({action: "update_statusPane", data: data});
+    };
+};
