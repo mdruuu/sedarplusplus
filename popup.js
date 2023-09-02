@@ -24,17 +24,13 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         }
     }
 
-      if (request.action === 'update_statusPane') {
-        let statusPane = document.getElementById('statusPane');
-        statusPane.innerHTML = ''
-        for (let item of request.data) {
-            console.log(item)
-            let anchor = `<a href="${item.link}">${item.text}</a><br>Date: ${item.date}<br><br>`;
-            statusPane.innerHTML += anchor;
-      }
-      updateLinks();
-    };
+    if (request.action === 'update_links') {
+        chrome.storage.local.set({ links: request.data }, function() {
+          chrome.tabs.create({ url: chrome.runtime.getURL("links.html") });
+        });
+    }
 });
+
 
 document.getElementById('searchBtn').addEventListener('click', performSearch);
 

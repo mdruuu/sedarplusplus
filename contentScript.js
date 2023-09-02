@@ -112,7 +112,7 @@ function grabLinks() {
             let date = dateElement.textContent;
             data.push({text: text, link: link, date: date})
         };
-        console.log('data grabbed');
-        chrome.runtime.sendMessage({action: "update_statusPane", data: data});
     };
+    console.log("Sending update_links")
+    chrome.runtime.sendMessage({action: "update_links", data: data});
 };
