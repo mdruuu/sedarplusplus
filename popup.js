@@ -23,7 +23,14 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
             statusPane.innerHTML += '<span>' + request.message + '</span><br>';
         }
     }
+
+    if (request.action === 'update_links') {
+        chrome.storage.local.set({ html: request.data }, function() {
+          chrome.tabs.create({ url: chrome.runtime.getURL("links.html") });
+        });
+    }
 });
+
 
 document.getElementById('searchBtn').addEventListener('click', performSearch);
 
@@ -32,7 +39,6 @@ document.getElementById('companyName').addEventListener('keypress', function (e)
         performSearch();
     }
 });
-
 
 function performSearch() {
   // clear statusPane
@@ -63,7 +69,7 @@ function performSearch() {
           sendMessage(tabId);
         }
       }); 
-    }, 500);
+    }, 1000);
     });
   })};
 

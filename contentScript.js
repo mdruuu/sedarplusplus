@@ -16,9 +16,6 @@ console.log = function (message) {
 // }
 
 
-
-
-
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     if (request.action !== 'search') {
         chrome.storage.local.get(['searchRequested', 'companyName', 'selectedValues'], function(result) {
@@ -89,12 +86,10 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                                 console.log(`Sorting List. Need 2 Clicks. Clicking...${++clickCount}`);
                                 if (clickCount >= 2) {
                                     clearInterval(intervalId);
-                                }   
-                            } else {
-                                console.log('No element with "Submitted date" found');
-                                clearInterval(intervalId);
-                            }
-                        }, 2000);
+                                    console.log('Grabbing HTML elements')
+                                    setTimeout(grabLinks, 2000);
+                                    }}}, 2000);
+  
                         break;
                     default: {
                         console.log('Unknown action:', request.action);
@@ -102,3 +97,22 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                 }
             }})}})
 
+
+function grabLinks() {
+    let rows = document.querySelectorAll('.appTblRow'); 
+    let data = [];
+
+    for (let row of rows) {
+        let linkElement = row.querySelector('.appTblCell2 a.appDocumentView.appResourceLink.appDocumentLink');
+        let dateElement = row.querySelector('.appAttrDateTime .appAttrValue span[aria-hidden="true"]');
+
+        if (linkElement && dateElement) {
+            let link = linkElement.href;
+            let text = linkElement.textContent;
+            let date = dateElement.textContent;
+            data.push({text: text, link: link, date: date})
+        };
+    };
+    console.log("Sending update_links")
+    chrome.runtime.sendMessage({action: "update_links", data: data});
+};
