@@ -60,35 +60,34 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                         break;
                     case 'page_loaded2':
                         console.log('Company Documents Page Loaded');
-                        
-                        // Do filingtype entry here. 
-                        let select = document.getElementById('FilingType');
 
-                        if (result.selectedValues !== "All") {
-                            // let valuesToSelect = selectValueMap[result.selectedValues];
-                            console.log(result.selectedValues)
-                            for(let i = 0; i < select.options.length; i++) {
-                                if(result.selectedValues.includes(select.options[i].value)) {
-                                    console.log(`Found Option ${i}`);
-                                    select.options[i].selected = true;
-                                }
-                            } 
-                        }
-                        let event = new Event('change');
-                        select.dispatchEvent(event);
-
+                        // first, do 2 clicks on sort, to sort by descending order.
                         let clickCount = 0;
                         const intervalId = setInterval(() => {
                             const xpath = "//a[.//span[contains(text(), 'Submitted date')]]";
                             const matchingElement = document.evaluate(xpath, document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null).singleNodeValue;
                             if (matchingElement) {
-                                matchingElement.click();
                                 console.log(`Sorting List. Need 2 Clicks. Clicking...${++clickCount}`);
-                                if (clickCount >= 2) {
+                                matchingElement.click();
+                                if (clickCount === 2) {
                                     clearInterval(intervalId);
-                                    console.log('Grabbing HTML elements')
-                                    setTimeout(grabLinks, 2000);
-                                    }}}, 2000);
+                                    setTimeout(async () => {
+                                        let select = document.getElementById('FilingType');
+                                        if (result.selectedValues !== "All") {
+                                            let combinedLinks = [];
+                                            await selectValues(result.selectedValues, select);
+                                            combinedLinks.push(...grabLinks());
+                                            for(let i = 1; i < result.selectedValues.length; i++) {
+                                                await removeOption();
+                                                combinedLinks.push(...grabLinks());
+                                            }
+                                            updateLinksPage(combinedLinks);
+                                        };
+                                    }, 2000);                                    
+                                }
+                            }
+                        
+                        }, 2000)
   
                         break;
                     default: {
@@ -99,9 +98,8 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 
 
 function grabLinks() {
-    let rows = document.querySelectorAll('.appTblRow'); 
     let data = [];
-
+    let rows = document.querySelectorAll('.appTblRow'); 
     for (let row of rows) {
         let linkElement = row.querySelector('.appTblCell2 a.appDocumentView.appResourceLink.appDocumentLink');
         let dateElement = row.querySelector('.appAttrDateTime .appAttrValue span[aria-hidden="true"]');
@@ -113,6 +111,67 @@ function grabLinks() {
             data.push({text: text, link: link, date: date})
         };
     };
-    console.log("Sending update_links")
-    chrome.runtime.sendMessage({action: "update_links", data: data});
+    return data;
 };
+
+
+
+
+function updateLinksPage(combinedLinks) {
+    console.log("Sending update_links")
+    // console.log(combinedLinks)
+    chrome.runtime.sendMessage({action: "update_links", data: combinedLinks});
+}
+
+
+
+async function removeOption() {
+
+    // Need to select the right remove button
+    // Matching  by name is going to be a little tricky because the identifier is not the same as the descriptor that shows up. May have to use the mapping I have above. 
+    // Can I just find the first matching element and remove that? 
+    // Oh - querySelector alraedy selects first element. 
+
+    let removeButton = document.querySelector(
+        ".select2-selection__choice__remove"
+    )
+    if (removeButton) {
+        removeButton.click();
+    } else {
+        console.log("Can't find remove  button")
+    }
+    await new Promise(resolve => setTimeout(resolve, 2000));
+    const searchButton = document.querySelector(".appButton.searchDocuments-tabs-criteriaAndButtons-buttonPad2-search.appButtonPrimary.appSearchButton.appSubmitButton.appPrimaryButton.appNotReadOnly.appIndex1");
+    if (searchButton) {
+        searchButton.click();
+        console.log('Search Button Clicked.');
+    }
+    await new Promise(resolve => setTimeout(resolve, 5000));
+
+}
+
+
+async function selectValues(values, select) {
+    console.log(`Filtering for: ${values}`);
+    for(let i = 0; i < select.options.length; i++) {
+        if(values.includes(select.options[i].value)) {
+            select.options[i].selected = true;
+            console.log(`Selected: ${select.options[i].value}`)
+        }
+    }
+    let event = new Event('change');
+    select.dispatchEvent(event);
+    console.log('Dispatched change event');
+    await new Promise(resolve => setTimeout(resolve, 2000));
+    const searchButton = document.querySelector(".appButton.searchDocuments-tabs-criteriaAndButtons-buttonPad2-search.appButtonPrimary.appSearchButton.appSubmitButton.appPrimaryButton.appNotReadOnly.appIndex1");
+    if (searchButton) {
+        searchButton.click();
+        console.log('Search Button Clicked.');
+    }
+    await new Promise(resolve => setTimeout(resolve, 5000));
+}
+
+
+
+
+

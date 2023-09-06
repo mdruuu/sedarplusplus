@@ -59,6 +59,7 @@ function performSearch() {
     chrome.tabs.update(tabId, { url: targetUrl }, function(tab) {
       setTimeout(function() {
       chrome.tabs.query({active: true, currentWindow: true}, function(tabs) {
+        console.log(`Page is: ${tabs[0].url}`);
         if (tabs[0].url === landingUrl) {
           console.log("Sedar+ Rerouted us. Reloading.");
           chrome.tabs.update(tabId, { url: targetUrl }, function(tab) {
