@@ -56,8 +56,8 @@ function performSearch() {
     const targetUrl = 'https://www.sedarplus.ca/csa-party/service/create.html?targetAppCode=csa-party&service=searchReportingIssuers&_locale=en'
     const landingUrl = 'https://www.sedarplus.ca/landingpage/'
 
-    chrome.tabs.update(tabId, { url: targetUrl }, function(tab) {
-      setTimeout(function() {
+    chrome.tabs.update(tabId, { url: targetUrl }, async function(tab) {
+      await new Promise(resolve => setTimeout(resolve, 1000));
       chrome.tabs.query({active: true, currentWindow: true}, function(tabs) {
         console.log(`Page is: ${tabs[0].url}`);
         if (tabs[0].url === landingUrl) {
@@ -70,7 +70,6 @@ function performSearch() {
           sendMessage(tabId);
         }
       }); 
-    }, 1000);
     });
   })};
 
