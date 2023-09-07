@@ -36,16 +36,34 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                             }}, 750);
                             setTimeout(() => {
                                 const links = document.querySelectorAll(".searchReportingIssuers-results-page-entitiesRecord-entityNameBox-viewEntity.appMenu.appMenuItem.appMenuDepth0.viewInstanceUpdateStackPush.appReadOnly.appIndex0");
-                                console.log('Clicking on the First Company Link');
-                                console.log(Array.from(links).map(link => link.outerHTML));
-                                if (links.length > 5) {
+                                if (links.length === 0) {
+                                    console.log('No results round. Check name and try again.');
+                                } else if (links.length > 8) {
                                     console.log('Too many results. Likely due to page loading issue. Try again.');
-                                } else if (links.length > 0) {
-                                    const firstLink = links[0];                                 
+                                } else if (links.length === 1) {
+                                    console.log('Company found. Clicking.');
+                                    const firstLink = links[0];
                                     firstLink.click();
-                                } else {
-                                    console.log('No Results Found. Check name and try again.');
-                                }
+                                } else if (links.length > 1) {
+                                    console.log("Multiple links found: ")
+                                    Array.from(links).forEach((link, index) => {
+                                        const span = link.querySelector('.appReceiveFocus');
+                                        if (span) {
+                                            console.log(`${index + 1}. ${span.textContent}`);
+                                        }
+                                    });
+                                    const matchingLink = Array.from(links).find(link => {
+                                        const span = link.querySelector('.appReceiveFocus');
+                                        return span && span.textContent.toLowerCase().includes(result.companyName.toLowerCase());
+                                    });
+                                    if (matchingLink) {
+                                        const span = matchingLink.querySelector('.appReceiveFocus');
+                                        console.log(`Closest company is: ${span.textContent}. If incorrect, try again with a more specific name.`)
+                                        matchingLink.click();
+                                    } else {
+                                        console.log("Company not found in the results. Try again")
+                                    }
+                                } 
                                 }, 2000);
                             }
                         break;
@@ -73,7 +91,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                                     clearInterval(intervalId);
                                     setTimeout(async () => {
                                         let select = document.getElementById('FilingType');
-                                        if (result.selectedValues !== "All") {
+                                        if (!result.selectedValues.includes("All")) {
                                             await selectValues(result.selectedValues, select);
                                         };
                                         if (result.downloadMode) {
