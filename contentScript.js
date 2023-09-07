@@ -78,7 +78,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                                         };
                                         if (result.downloadMode) {
                                             for (let i = 0; i < result.selectedValues.length; i++) {
-                                                await (result.downloadAll ? downloadAllLinks : downloadLinks)(result.companyName);
+                                                await (result.downloadAll ? downloadAllLinks : downloadLinksSimple)();
                                                 if (i < result.selectedValues.length - 1) {
                                                     await removeOption();
                                                 }
@@ -97,26 +97,41 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                 }
             }})}})
 
-async function downloadLinks(companyName) {
+async function downloadLinksSimple() {
     let linkElements = document.querySelectorAll('.appTblCell2 a.appDocumentView.appResourceLink.appDocumentLink');
     for (let linkElement of linkElements) {
-        let linkName = linkElement.querySelector('span').textContent;
-        linkName = linkName.replace('.pdf', '');        
-        let row = linkElement.closest('.appTblRow');
-        let dateElement = row.querySelector('.appAttrDateTime .appAttrValue span[aria-hidden="true"]').textContent;
-        dateElement = dateElement.substring(0, 9);
-        let downloadInfo = {
-            url: linkElement.href,
-            filename: `sedarplusplus/${companyName}/${companyName}_${linkName}_${dateElement}.pdf`,
-            conflictAction: 'uniquify',
-        };
-        // Send a message to the background script to perform the download
-        chrome.runtime.sendMessage({action: "download", downloadInfo: downloadInfo});
+        console.log(linkElement.textContent)
+        // linkElement.click();
+        let delay = Math.floor(Math.random() * 300);
+        await new Promise(resolve => setTimeout(resolve, 750 + delay));
     }
 }
 
+async function downloadLinksOriginal(companyName) {
+    let linkName = linkElement.querySelector('span').textContent;
+    linkName = linkName.replace('.pdf', '');        
+    let row = linkElement.closest('.appTblRow');
+    let dateElement = row.querySelector('.appAttrDateTime .appAttrValue span[aria-hidden="true"]').textContent;
+    dateElement = dateElement.substring(0, 9);
+    let downloadInfo = {
+        url: linkElement.href,
+        filename: `sedarplusplus/${companyName}/${companyName}_${linkName}_${dateElement}.pdf`,
+        conflictAction: 'uniquify',
+    };
+    // Send a message to the background script to perform the download
+    chrome.runtime.sendMessage({action: "download", downloadInfo: downloadInfo});
+} //! This is the original function that downloaded the file into a specific folder and renamed it. However, you can only do it on one page before it starts rerouting your traffic to a bot checker, and it becomes impossible to run this code again. USE RESULT.COMPANYNAME to pass companyname, not REQUEST.
+
+
 async function downloadAllLinks() {
-    console.log("Code Not Ready Yet")
+    let links = document.querySelectorAll('a[id^="head-pagination-item-"]:not([aria-label="Next Page"], [aria-label="Page 1"])');
+    console.log(links);
+    await downloadLinks();
+    for (let link of links) {
+        link.click();
+        await new Promise(resolve => setTimeout(resolve, 1000))
+        await downloadLinks();
+    }
 }
 
 
@@ -163,7 +178,7 @@ async function removeOption() {
         searchButton.click();
         console.log('Search Button Clicked.');
     }
-    await new Promise(resolve => setTimeout(resolve, 10000));
+    await new Promise(resolve => setTimeout(resolve, 5000));
 
 }
 
