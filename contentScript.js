@@ -77,11 +77,13 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                                             await selectValues(result.selectedValues, select);
                                         };
                                         if (result.downloadMode) {
+                                            console.log("Downloading links. Please be patient.")
                                             for (let i = 0; i < result.selectedValues.length; i++) {
                                                 await (result.downloadAll ? downloadAllLinks : downloadLinksSimple)();
                                                 if (i < result.selectedValues.length - 1) {
                                                     await removeOption();
                                                 }
+                                            console.log("Finished Downloading.")
                                             }
                                         }
                                     }, 2000);                                    
@@ -100,8 +102,8 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 async function downloadLinksSimple() {
     let linkElements = document.querySelectorAll('.appTblCell2 a.appDocumentView.appResourceLink.appDocumentLink');
     for (let linkElement of linkElements) {
-        console.log(linkElement.textContent)
-        // linkElement.click();
+        // console.log(linkElement.textContent)
+        linkElement.click();
         let delay = Math.floor(Math.random() * 300);
         await new Promise(resolve => setTimeout(resolve, 750 + delay));
     }
@@ -125,12 +127,12 @@ async function downloadLinksOriginal(companyName) {
 
 async function downloadAllLinks() {
     let links = document.querySelectorAll('a[id^="head-pagination-item-"]:not([aria-label="Next Page"], [aria-label="Page 1"])');
-    console.log(links);
-    await downloadLinks();
+    await downloadLinksSimple();
     for (let link of links) {
+        console.log("Going to Next Page")
         link.click();
         await new Promise(resolve => setTimeout(resolve, 1000))
-        await downloadLinks();
+        await downloadLinksSimple();
     }
 }
 
