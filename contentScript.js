@@ -122,7 +122,7 @@ async function downloadLinksSimple() {
     for (let linkElement of linkElements) {
         // console.log(linkElement.textContent)
         linkElement.click();
-        let delay = Math.floor(Math.random() * 300);
+        let delay = Math.floor(Math.random() * 500);
         await new Promise(resolve => setTimeout(resolve, 750 + delay));
     }
 }
@@ -149,7 +149,7 @@ async function downloadAllLinks() {
     for (let link of links) {
         console.log("Going to Next Page")
         link.click();
-        await new Promise(resolve => setTimeout(resolve, 1000))
+        await new Promise(resolve => setTimeout(resolve, 1500))
         await downloadLinksSimple();
     }
 }
@@ -196,9 +196,9 @@ async function removeOption() {
     const searchButton = document.querySelector(".appButton.searchDocuments-tabs-criteriaAndButtons-buttonPad2-search.appButtonPrimary.appSearchButton.appSubmitButton.appPrimaryButton.appNotReadOnly.appIndex1");
     if (searchButton) {
         searchButton.click();
-        console.log('Search Button Clicked.');
+        console.log('Filter Search Button Clicked.');
     }
-    await new Promise(resolve => setTimeout(resolve, 5000));
+    await new Promise(resolve => setTimeout(resolve, 4000));
 
 }
 

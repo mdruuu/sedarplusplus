@@ -40,6 +40,26 @@ document.getElementById('companyName').addEventListener('keypress', function (e)
     }
 });
 
+document.getElementById('resetBtn').addEventListener('click', resetEverything);
+
+function resetEverything() {
+  // Reset the state of the popup
+  document.getElementById('companyName').value = '';
+  document.getElementById('documentType').selectedIndex = 0;
+  document.getElementById('downloadMode').checked = false;
+  document.getElementById('downloadAll').checked = false;
+  document.getElementById('statusPane').innerHTML = '';
+
+  // Clear chrome storage
+  chrome.storage.local.clear(function() {
+      console.log("Storage Cleared.")
+  });
+
+  // Add any other reset logic you need here...
+}
+
+
+
 function performSearch() {
   // clear statusPane
   let statusPane = document.getElementById('statusPane');
@@ -58,7 +78,7 @@ function performSearch() {
 
     chrome.tabs.update(tabId, { url: targetUrl }, async function(tab) {
       sendMessage(tabId);
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      await new Promise(resolve => setTimeout(resolve, 3000));
       chrome.tabs.query({active: true, currentWindow: true}, function(tabs) {
         if (tabs[0].url === landingUrl) {
           console.log("Sedar+ Rerouted us. Reloading.");
