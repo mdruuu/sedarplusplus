@@ -83,8 +83,8 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                                                 if (i < result.selectedValues.length - 1) {
                                                     await removeOption();
                                                 }
-                                            console.log("Finished Downloading.")
                                             }
+                                            console.log("Finished Downloading.")
                                         }
                                     }, 2000);                                    
                                 }
