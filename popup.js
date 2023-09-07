@@ -78,11 +78,14 @@ function sendMessage(tabId) {
   console.log('Sending Message')
   const companyName = document.getElementById('companyName').value;    
   let selectElement = document.getElementById('documentType');
+  let downloadMode = document.getElementById('downloadMode').checked;
+  console.log(downloadMode)
+  let downloadAll = document.getElementById('downloadAll').checked;
   let selectedValues = Array.from(selectElement.selectedOptions).map(option => option.value);
-  chrome.storage.local.set({ searchRequested: true, companyName: companyName, selectedValues: selectedValues }, function() {
+  chrome.storage.local.set({ searchRequested: true, companyName: companyName, selectedValues: selectedValues, downloadMode: downloadMode, downloadAll: downloadAll }, function() {
     chrome.tabs.sendMessage(tabId, { action: 'search', companyName: companyName});
     chrome.runtime.sendMessage({ action: 'reset_count' });
-    console.log('Message Sent');
+    // console.log('Message Sent');
   }); 
 }
 

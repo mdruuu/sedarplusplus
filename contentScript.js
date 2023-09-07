@@ -18,7 +18,7 @@ console.log = function (message) {
 
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     if (request.action !== 'search') {
-        chrome.storage.local.get(['searchRequested', 'companyName', 'selectedValues'], function(result) {
+        chrome.storage.local.get(['searchRequested', 'companyName', 'selectedValues', 'downloadMode', 'downloadAll'], function(result) {
             if (result.searchRequested) {
                 switch (request.action) {
                     case 'page_loaded0':
@@ -74,15 +74,16 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                                     setTimeout(async () => {
                                         let select = document.getElementById('FilingType');
                                         if (result.selectedValues !== "All") {
-                                            let combinedLinks = [];
                                             await selectValues(result.selectedValues, select);
-                                            combinedLinks.push(...grabLinks());
-                                            for(let i = 1; i < result.selectedValues.length; i++) {
-                                                await removeOption();
-                                                combinedLinks.push(...grabLinks());
-                                            }
-                                            updateLinksPage(combinedLinks);
                                         };
+                                        if (result.downloadMode) {
+                                            for (let i = 0; i < result.selectedValues.length; i++) {
+                                                await (result.downloadAll ? downloadAllLinks : downloadLinks)(result.companyName);
+                                                if (i < result.selectedValues.length - 1) {
+                                                    await removeOption();
+                                                }
+                                            }
+                                        }
                                     }, 2000);                                    
                                 }
                             }
@@ -95,6 +96,28 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                         }
                 }
             }})}})
+
+async function downloadLinks(companyName) {
+    let linkElements = document.querySelectorAll('.appTblCell2 a.appDocumentView.appResourceLink.appDocumentLink');
+    for (let linkElement of linkElements) {
+        let linkName = linkElement.querySelector('span').textContent;
+        linkName = linkName.replace('.pdf', '');        
+        let row = linkElement.closest('.appTblRow');
+        let dateElement = row.querySelector('.appAttrDateTime .appAttrValue span[aria-hidden="true"]').textContent;
+        dateElement = dateElement.substring(0, 9);
+        let downloadInfo = {
+            url: linkElement.href,
+            filename: `sedarplusplus/${companyName}/${companyName}_${linkName}_${dateElement}.pdf`,
+            conflictAction: 'uniquify',
+        };
+        // Send a message to the background script to perform the download
+        chrome.runtime.sendMessage({action: "download", downloadInfo: downloadInfo});
+    }
+}
+
+async function downloadAllLinks() {
+    console.log("Code Not Ready Yet")
+}
 
 
 function grabLinks() {
@@ -116,7 +139,6 @@ function grabLinks() {
 
 
 
-
 function updateLinksPage(combinedLinks) {
     console.log("Sending update_links")
     // console.log(combinedLinks)
@@ -126,11 +148,6 @@ function updateLinksPage(combinedLinks) {
 
 
 async function removeOption() {
-
-    // Need to select the right remove button
-    // Matching  by name is going to be a little tricky because the identifier is not the same as the descriptor that shows up. May have to use the mapping I have above. 
-    // Can I just find the first matching element and remove that? 
-    // Oh - querySelector alraedy selects first element. 
 
     let removeButton = document.querySelector(
         ".select2-selection__choice__remove"
@@ -146,7 +163,7 @@ async function removeOption() {
         searchButton.click();
         console.log('Search Button Clicked.');
     }
-    await new Promise(resolve => setTimeout(resolve, 5000));
+    await new Promise(resolve => setTimeout(resolve, 10000));
 
 }
 
@@ -168,7 +185,7 @@ async function selectValues(values, select) {
         searchButton.click();
         console.log('Search Button Clicked.');
     }
-    await new Promise(resolve => setTimeout(resolve, 5000));
+    await new Promise(resolve => setTimeout(resolve, 2000));
 }
 
 
