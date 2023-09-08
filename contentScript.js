@@ -17,8 +17,9 @@ console.log = function (message) {
 
 
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+    // The !== search is here because the code runs on page_loaded messages. So this code block is listening for bunch of page_loaded message. THere is probably a much better / easier way to do this. Come back to it after implementing link mode. 
     if (request.action !== 'search') {
-        chrome.storage.local.get(['searchRequested', 'companyName', 'selectedValues', 'downloadMode', 'downloadAll'], function(result) {
+        chrome.storage.local.get(['searchRequested', 'companyName', 'fileTypeFilters', 'modeType'], function(result) {
             if (result.searchRequested) {
                 switch (request.action) {
                     case 'page_loaded0':
@@ -89,33 +90,89 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                                 matchingElement.click();
                                 if (clickCount === 2) {
                                     clearInterval(intervalId);
+                                    
+                                    
                                     setTimeout(async () => {
-                                        let select = document.getElementById('FilingType');
-                                        if (!result.selectedValues.includes("All")) {
-                                            await selectValues(result.selectedValues, select);
+                                        const actionFunctionMap = {
+                                            'Download': downloadLinksSimple,
+                                            'DownloadAll': processAllLinks('DownloadAll'),
+                                            'Link': grabLinks,
+                                            'LinkAll': processAllLinks('LinkAll')
                                         };
-                                        if (result.downloadMode) {
-                                            console.log("Downloading links. Please be patient.")
-                                            for (let i = 0; i < result.selectedValues.length; i++) {
-                                                await (result.downloadAll ? downloadAllLinks : downloadLinksSimple)();
-                                                if (i < result.selectedValues.length - 1) {
-                                                    await removeOption();
-                                                }
-                                            }
-                                            console.log("Finished Downloading.")
+
+                                        let select = document.getElementById('FilingType');
+                                        if (!result.fileTypeFilters.includes("All")) {
+                                            await selectValues(result.fileTypeFilters, select);
+                                        };
+                                        if (result.modetype !== "Regular") {
+                                            await processFileTypes(result.modeType, result.fileTypeFilters, actionFunctionMap[result.modeType]);
                                         }
-                                    }, 2000);                                    
+                                    }, 2000);
                                 }
-                            }
-                        
+                            }                        
                         }, 2000)
-  
                         break;
                     default: {
                         console.log('Unknown action:', request.action);
                         }
-                }
-            }})}})
+                };
+            };
+        });
+    };
+    if (request.action === 'grab_document') {
+        grabDocument(request.date, request.text);
+    }
+});
+
+async function grabDocument(date, text) {
+    let removeButton = document.querySelector(
+        ".select2-selection__choice__remove"
+    )
+    if (removeButton) {
+        console.log('Filters Still Applied. Removing')
+        await removeOption(); // Reset the page by removing any remaining options.
+    }
+    let startDate = document.querySelector('#DocumentDate')
+    let endDate = document.querySelector('#DocumentDate2')
+    let searchButton = document.querySelector(".appButton.searchDocuments-tabs-criteriaAndButtons-buttonPad2-search.appButtonPrimary.appSearchButton.appSubmitButton.appPrimaryButton.appNotReadOnly.appIndex1");
+
+    // Convert date from "15 Aug 2022" format to "DD/MM/YYYY" format
+    let parts = date.split(' ');
+    let months = {Jan: '01', Feb: '02', Mar: '03', Apr: '04', May: '05', Jun: '06', Jul: '07', Aug: '08', Sep: '09', Oct: '10', Nov: '11', Dec: '12'};
+    date = parts[0] + '/' + months[parts[1]] + '/' + parts[2];
+
+    startDate.value = date;
+    endDate.value = date;
+    console.log("Searching for Specific Date")
+    searchButton.click();
+    await waitForElementToDisappear('catProcessing')
+    // Look for the element and click on the link where span == text
+    let links = document.querySelectorAll('.appDocumentView.appResourceLink.appDocumentLink');
+    for (let link of links) {
+        let span = link.querySelector('span');
+        if (span && span.textContent === text) {
+            console.log('Found link. Clicking')
+            link.click();
+            break;
+        }
+    }
+}
+
+
+async function processFileTypes(modeType, fileType, actionFunction) {
+    let combinedAllData = []
+    for (let i = 0; i < fileType.length; i++) {
+        let allData = await actionFunction();
+        combinedAllData.push(...allData);
+        if (i < fileType.length - 1) {
+            await removeOption();
+        }
+    }
+    if (modeType === 'LinkAll') {
+        chrome.runtime.sendMessage({action: 'update_sidePane', data: JSON.stringify(combinedAllData)});
+    }
+    console.log("Finished processing.")
+}
 
 async function downloadLinksSimple() {
     let linkElements = document.querySelectorAll('.appTblCell2 a.appDocumentView.appResourceLink.appDocumentLink');
@@ -149,19 +206,42 @@ async function downloadLinksOriginal(companyName) {
 } //! This is the original function that downloaded the file into a specific folder and renamed it. However, you can only do it on one page before it starts rerouting your traffic to a bot checker, and it becomes impossible to run this code again. USE RESULT.COMPANYNAME to pass companyname, not REQUEST.
 
 
-async function downloadAllLinks() {
-    let links = document.querySelectorAll('a[id^="head-pagination-item-"]:not([aria-label="Next Page"], [aria-label="Page 1"])');
-    await downloadLinksSimple();
-    for (let link of links) {
-        console.log("Going to Next Page")
-        link.click();
-        await new Promise(resolve => setTimeout(resolve, 3000))
-        await downloadLinksSimple();
-    }
+function processAllLinks(mode) {
+    return async function() {
+        let dateId = '.appAttrDateTime .appAttrValue span[aria-hidden="true"]'
+        let rowElement = document.querySelector('.appTblRow.appTblRow0');
+        let newDate;
+        let oldDate = rowElement.querySelector(dateId).textContent;
+
+        let pageLinks = document.querySelectorAll('a[id^="head-pagination-item-"]:not([aria-label="Next Page"], [aria-label="Page 1"])');
+        let allData = [];
+        let page = 1
+
+        let data = (mode === 'DownloadAll') ? await downloadLinksSimple() : await grabLinks(page);
+            if (mode === 'LinkAll') allData.push(...data);
+        for (let pageLink of pageLinks) {   
+            console.log("Going to Next Page")
+            pageLink.click();
+            await new Promise(resolve => {
+                const intervalId = setInterval(() => {
+                    let rowElement = document.querySelector('.appTblRow.appTblRow0');
+                     newDate = rowElement.querySelector(dateId).textContent;
+                    if (newDate !== oldDate) {
+                        clearInterval(intervalId);
+                        resolve();
+                    }
+                }, 100); // Check every 100ms
+            });
+            page += 1
+            oldDate = newDate;
+            let data = (mode === 'DownloadAll') ? await downloadLinksSimple() : await grabLinks(page);
+                if (mode === 'LinkAll') allData.push(...data);
+        }
+        return allData
+    } 
 }
 
-
-function grabLinks() {
+async function grabLinks(page) {
     let data = [];
     let rows = document.querySelectorAll('.appTblRow'); 
     for (let row of rows) {
@@ -172,7 +252,7 @@ function grabLinks() {
             let link = linkElement.href;
             let text = linkElement.textContent;
             let date = dateElement.textContent;
-            data.push({text: text, link: link, date: date})
+            data.push({text: text, link: link, date: date.substring(0, 11), page: page})
         };
     };
     return data;
@@ -189,14 +269,13 @@ function updateLinksPage(combinedLinks) {
 
 
 async function removeOption() {
-
     let removeButton = document.querySelector(
         ".select2-selection__choice__remove"
     )
     if (removeButton) {
         removeButton.click();
     } else {
-        console.log("Can't find remove  button")
+        console.log("No remove button")
     }
     await new Promise(resolve => setTimeout(resolve, 2000));
     const searchButton = document.querySelector(".appButton.searchDocuments-tabs-criteriaAndButtons-buttonPad2-search.appButtonPrimary.appSearchButton.appSubmitButton.appPrimaryButton.appNotReadOnly.appIndex1");
@@ -230,6 +309,27 @@ async function selectValues(values, select) {
 }
 
 
+function waitForElementToDisappear(elementId) {
+    return new Promise(resolve => {
+        // First, wait for the element to appear
+        const waitForAppearIntervalId = setInterval(() => {
+            const element = document.getElementById(elementId);
+            if (element) {
+                // Once the element has appeared, clear this interval
+                clearInterval(waitForAppearIntervalId);
 
+                // Then, wait for the element to disappear
+                const waitForDisappearIntervalId = setInterval(() => {
+                    const element = document.getElementById(elementId);
+                    if (!element) {
+                        // Once the element has disappeared, clear this interval and resolve the promise
+                        clearInterval(waitForDisappearIntervalId);
+                        resolve();
+                    }
+                }, 100); // Check every 100ms
+            }
+        }, 100); // Check every 100ms
+    });
+}
 
 

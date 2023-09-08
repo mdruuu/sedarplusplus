@@ -5,7 +5,7 @@
     <title>Sedar++</title>
     <style>
       body {
-        width: 290px;
+        width: 400px;
         margin: 5px;
         display: flex;
         flex-direction: column;
@@ -19,9 +19,15 @@
       .input-row {
         width: 100%;
       }
-      #documentType {
+      #filingType {
         width: 100%;
         height: 7em;        
+      }
+      #mode-type {
+        width: 100%;
+      }
+      #year {
+        width: 50%;
       }
       .input-row {
         display: flex;
@@ -34,7 +40,7 @@
       label {
         margin-right: 5px;
       }
-      label[for="documentType"] {
+      label[for="filingType"] {
         position: absolute;
         width: 1px;
         height: 1px;
@@ -47,7 +53,7 @@
       #statusPane {
         border: 1px solid black; /* Add a border around the statusPane */
         padding: 10px; /* Add some padding */
-        margin-top: 10px; /* Add some margin at the top */
+        margin-top: 3px; /* Add some margin at the top */
         overflow-y: auto; /* Add auto-scroll */        
       }
       #statusPane h2 {
@@ -67,15 +73,13 @@
   <body>
     <div class="input-grid">
       <div class="input-row">
-        <!-- <label for="companyName">Company Name: </label> -->
         <input type="text" id="companyName" placeholder="Name">
-        <button id="resetBtn">Reset</button>
         <button id="searchBtn">Search</button>      
       </div>
       <div class="input-row">
-        <label for="documentType">Document Type:</label>
-        <select id="documentType" multiple="multiple">
-          <option value="All" selected>All</option>
+        <label for="filingType">Filing Type:</label>
+        <select id="filingType" multiple="multiple">
+          <option value="All" selected>Filing Type: All / Default</option>
           <option value="ANNUAL_FINANCIAL_STATEMENTS">Annual Financials</option>
           <option value="INTERIM_FINANCIAL_STATEMENTSREPORT">Interim Financials</option>
           <option value="ANNUAL_MDA">Annual MD&A</option>
@@ -87,11 +91,16 @@
           <option value="LONG_FORM_PROSPECTUS">Prospectus</option>
         </select>
       </div>
-      <div class="download-boxes">
-        <input type="checkbox" id="downloadMode" name="downloadMode">
-        <label for="downloadMode">Download Mode</label>
-        <input type="checkbox" id="downloadAll" name="downloadAll">
-        <label for ="downloadAll">Download All</label>
+      <div class="input-row">
+        <label for="mode-type">Mode</label>
+        <select id="mode-type">
+          <option value="Regular">Company Page</option>
+          <option value="Link">Document Selector</option>
+          <option value="LinkAll">Document Selector - All</option>
+          <option value="Download">Downloader</option>
+          <option value="DownloadAll">Download All - EXPERIMENTAL</option>
+        </select>
+        <input type="number" id="year" placeholder="Cutoff Year">
       </div>
     </div>
     
