@@ -23,6 +23,12 @@
         width: 100%;
         height: 7em;        
       }
+      #mode-type {
+        width: 100%;
+      }
+      #year {
+        width: 50%;
+      }
       .input-row {
         display: flex;
         justify-content: space-between;
@@ -47,7 +53,7 @@
       #statusPane {
         border: 1px solid black; /* Add a border around the statusPane */
         padding: 10px; /* Add some padding */
-        margin-top: 10px; /* Add some margin at the top */
+        margin-top: 3px; /* Add some margin at the top */
         overflow-y: auto; /* Add auto-scroll */        
       }
       #statusPane h2 {
@@ -74,7 +80,7 @@
       <div class="input-row">
         <label for="filingType">Filing Type:</label>
         <select id="filingType" multiple="multiple">
-          <option value="All" selected>Filing Type: All</option>
+          <option value="All" selected>Filing Type: All / Default</option>
           <option value="ANNUAL_FINANCIAL_STATEMENTS">Annual Financials</option>
           <option value="INTERIM_FINANCIAL_STATEMENTSREPORT">Interim Financials</option>
           <option value="ANNUAL_MDA">Annual MD&A</option>
@@ -86,7 +92,7 @@
           <option value="LONG_FORM_PROSPECTUS">Prospectus</option>
         </select>
       </div>
-      <div class="input-roww">
+      <div class="input-row">
         <label for="mode-type">Mode</label>
         <select id="mode-type">
           <option value="Regular">Company Page</option>
@@ -95,6 +101,7 @@
           <option value="Download">Downloader</option>
           <option value="DownloadAll">Download All - EXPERIMENTAL</option>
         </select>
+        <input type="number" id="year" placeholder="Yr: All">
       </div>
     </div>
     

@@ -17,18 +17,16 @@ console.log = function (message) {
 };
 
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+  let statusPane = document.getElementById('statusPane');
     if (request.action === 'log') {
-        let statusPane = document.getElementById('statusPane');
-        if (statusPane) {
-            statusPane.innerHTML += '<span>' + request.message + '</span><br>';
-        }
+      statusPane.innerHTML += '<span>' + request.message + '</span><br>';
     }
 
-    // if (request.action === 'update_links') {
-    //     chrome.storage.local.set({ html: request.data }, function() {
-    //       chrome.tabs.create({ url: chrome.runtime.getURL("links.html") });
-    //     });
-    // }
+    if (request.action === 'update_sidePane') {
+      statusPane.innerHTML = ''
+      let allData = JSON.parse(request.data)
+      statusPane.innerHTML = `<table><tr><th>Page</th><th>Title</th><th>Date</th></tr>${allData.map(data => `<tr><td>${data.page}</td><td><a href="#" data-date="${data.date}">${data.text}</a></td><td>${data.date}</td></tr>`).join('')}</table>`;
+    }
 });
 
 
@@ -40,22 +38,37 @@ document.getElementById('companyName').addEventListener('keypress', function (e)
     }
 });
 
-document.getElementById('resetBtn').addEventListener('click', resetEverything);
+document.addEventListener('click', function(e) {
+  if (e.target.tagName === 'A' && e.target.hasAttribute('data-date')) {
+    e.preventDefault();
+    let date = e.target.getAttribute('data-date'); 
+    let text = e.target.innerText;
+    console.log(text)
+    
+    chrome.tabs.query({active: true, currentWindow: true}, function(tabs) {
+      chrome.tabs.sendMessage(tabs[0].id, {action: 'grab_document', date: date, text: text });
+    });
+  }
+});
 
-function resetEverything() {
-  // Reset the state of the popup
-  document.getElementById('companyName').value = '';
-  document.getElementById('documentType').selectedIndex = 0;
-  document.getElementById('mode-type').selectedIndex = 0;
-  document.getElementById('statusPane').innerHTML = '';
 
-  // Clear chrome storage
-  chrome.storage.local.clear(function() {
-      console.log("Storage Cleared.")
-  });
 
-}
+//! Retiring the Reset Button. It's ugly and unnecessary since clicking out of window resets everything anyways. 
+// document.getElementById('resetBtn').addEventListener('click', resetEverything);
 
+// function resetEverything() {
+//   // Reset the state of the popup
+//   document.getElementById('companyName').value = '';
+//   document.getElementById('documentType').selectedIndex = 0;
+//   document.getElementById('mode-type').selectedIndex = 0;
+//   document.getElementById('statusPane').innerHTML = '';
+
+//   // Clear chrome storage
+//   chrome.storage.local.clear(function() {
+//       console.log("Storage Cleared.")
+//   });
+
+// }
 
 
 function performSearch() {
