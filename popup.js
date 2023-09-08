@@ -24,11 +24,11 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         }
     }
 
-    if (request.action === 'update_links') {
-        chrome.storage.local.set({ html: request.data }, function() {
-          chrome.tabs.create({ url: chrome.runtime.getURL("links.html") });
-        });
-    }
+    // if (request.action === 'update_links') {
+    //     chrome.storage.local.set({ html: request.data }, function() {
+    //       chrome.tabs.create({ url: chrome.runtime.getURL("links.html") });
+    //     });
+    // }
 });
 
 
@@ -46,8 +46,7 @@ function resetEverything() {
   // Reset the state of the popup
   document.getElementById('companyName').value = '';
   document.getElementById('documentType').selectedIndex = 0;
-  document.getElementById('downloadMode').checked = false;
-  document.getElementById('downloadAll').checked = false;
+  document.getElementById('mode-type').selectedIndex = 0;
   document.getElementById('statusPane').innerHTML = '';
 
   // Clear chrome storage
@@ -55,17 +54,13 @@ function resetEverything() {
       console.log("Storage Cleared.")
   });
 
-  // Add any other reset logic you need here...
 }
 
 
 
 function performSearch() {
-  // clear statusPane
-  let statusPane = document.getElementById('statusPane');
-  statusPane.innerHTML = '';
+  document.getElementById('statusPane').innerHTML = '';
   console.log('Search Request Received.')
-  // clear chrome storage
   chrome.storage.local.clear(function() {
     console.log("Storage Cleared.")
   });
@@ -91,14 +86,12 @@ function performSearch() {
   })};
 
 function sendMessage(tabId) {
-  console.log('Sending Message')
   const companyName = document.getElementById('companyName').value;    
-  let selectElement = document.getElementById('documentType');
-  let downloadMode = document.getElementById('downloadMode').checked;
-  console.log(downloadMode)
-  let downloadAll = document.getElementById('downloadAll').checked;
-  let selectedValues = Array.from(selectElement.selectedOptions).map(option => option.value);
-  chrome.storage.local.set({ searchRequested: true, companyName: companyName, selectedValues: selectedValues, downloadMode: downloadMode, downloadAll: downloadAll }, function() {
+  const selectElement = document.getElementById('documentType');
+  const selectedValues = Array.from(selectElement.selectedOptions).map(option => option.value);
+  const modeType = document.getElementById('mode-type').value;
+
+  chrome.storage.local.set({ searchRequested: true, companyName: companyName, selectedValues: selectedValues, modeType: modeType }, function() {
     chrome.tabs.sendMessage(tabId, { action: 'search', companyName: companyName});
     chrome.runtime.sendMessage({ action: 'reset_count' });
     // console.log('Message Sent');

@@ -18,7 +18,7 @@ console.log = function (message) {
 
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     if (request.action !== 'search') {
-        chrome.storage.local.get(['searchRequested', 'companyName', 'selectedValues', 'downloadMode', 'downloadAll'], function(result) {
+        chrome.storage.local.get(['searchRequested', 'companyName', 'selectedValues', 'modeType'], function(result) {
             if (result.searchRequested) {
                 switch (request.action) {
                     case 'page_loaded0':
