@@ -14,14 +14,14 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     }
 });
 
-chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
-    if (request.action === 'download') {
-        (async function() {
-            await new Promise(resolve => setTimeout(resolve, 500));
-            chrome.downloads.download(request.downloadInfo);
-            // console.log(`Download Replacement ${JSON.stringify(request.downloadInfo, null, 2)}`);        
-            // console.log(`Download Call Time ${new Date()}`) 
-        })();
+// chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+//     if (request.action === 'download') {
+//         (async function() {
+//             await new Promise(resolve => setTimeout(resolve, 500));
+//             chrome.downloads.download(request.downloadInfo);
+//             // console.log(`Download Replacement ${JSON.stringify(request.downloadInfo, null, 2)}`);        
+//             // console.log(`Download Call Time ${new Date()}`) 
+//         })();
         
-    }
-});
+//     }
+// });

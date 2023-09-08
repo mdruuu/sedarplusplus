@@ -17,6 +17,7 @@ console.log = function (message) {
 
 
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+    // The !== search is here because the code runs on page_loaded messages. So this code block is listening for bunch of page_loaded message. THere is probably a much better / easier way to do this. Come back to it after implementing link mode. 
     if (request.action !== 'search') {
         chrome.storage.local.get(['searchRequested', 'companyName', 'selectedValues', 'modeType'], function(result) {
             if (result.searchRequested) {
