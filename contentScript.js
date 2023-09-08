@@ -120,9 +120,15 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 async function downloadLinksSimple() {
     let linkElements = document.querySelectorAll('.appTblCell2 a.appDocumentView.appResourceLink.appDocumentLink');
     for (let linkElement of linkElements) {
-        // console.log(linkElement.textContent)
-        linkElement.click();
-        let delay = Math.floor(Math.random() * 500);
+        let linkName = linkElement.querySelector('span').textContent;
+        let rowElement = linkElement.closest('.appTblRow');
+        let rowNum = rowElement.className;
+        let dateElement = rowElement.querySelector('.appAttrDateTime .appAttrValue span[aria-hidden="true"]').textContent;
+        // dateElement = dateElement.substring(0, 9);
+        console.log(`Downloading: ${rowNum} Date: ${dateElement}`)
+
+        // linkElement.click();
+        let delay = Math.floor(Math.random() * 750);
         await new Promise(resolve => setTimeout(resolve, 750 + delay));
     }
 }
