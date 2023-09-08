@@ -19,7 +19,7 @@ console.log = function (message) {
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     // The !== search is here because the code runs on page_loaded messages. So this code block is listening for bunch of page_loaded message. THere is probably a much better / easier way to do this. Come back to it after implementing link mode. 
     if (request.action !== 'search') {
-        chrome.storage.local.get(['searchRequested', 'companyName', 'selectedValues', 'modeType'], function(result) {
+        chrome.storage.local.get(['searchRequested', 'companyName', 'fileTypeFilters', 'modeType'], function(result) {
             if (result.searchRequested) {
                 switch (request.action) {
                     case 'page_loaded0':
@@ -90,22 +90,25 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                                 matchingElement.click();
                                 if (clickCount === 2) {
                                     clearInterval(intervalId);
+                                    
+                                    const actionFunctionMap = {
+                                        'Download': downloadLinksSimple,
+                                        'DownloadAll': processAllLinks('downloadAll'),
+                                        'Link': grabLinks,
+                                        'LinkAll': processAllLinks('linkAll')
+                                    };
                                     setTimeout(async () => {
                                         let select = document.getElementById('FilingType');
-                                        if (!result.selectedValues.includes("All")) {
-                                            await selectValues(result.selectedValues, select);
+                                        if (!result.fileTypeFilters.includes("All")) {
+                                            await selectValues(result.fileTypeFilters, select);
                                         };
-                                        if (result.downloadMode) {
-                                            console.log("Downloading links. Please be patient.")
-                                            for (let i = 0; i < result.selectedValues.length; i++) {
-                                                await (result.downloadAll ? downloadAllLinks : downloadLinksSimple)();
-                                                if (i < result.selectedValues.length - 1) {
-                                                    await removeOption();
-                                                }
-                                            }
-                                            console.log("Finished Downloading.")
+                                        if (result.modetype !== "Regular") {
+                                            await processFileTypes(result.modeType, actionFunctionMap[result.modeType]);
                                         }
-                                    }, 2000);                                    
+
+
+                                    }, 2000);
+                                    
                                 }
                             }
                         
@@ -117,6 +120,17 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                         }
                 }
             }})}})
+
+
+async function processFileTypes(modeType, actionFunction) {
+    for (let i = 0; i < result.fileTypeFilters.length; i++) {
+        await actionFunction();
+        if (i < result.fileTypeFilters.length - 1) {
+            await removeOption();
+        }
+    }
+    console.log("Finished processing.")
+}
 
 async function downloadLinksSimple() {
     let linkElements = document.querySelectorAll('.appTblCell2 a.appDocumentView.appResourceLink.appDocumentLink');
@@ -150,17 +164,21 @@ async function downloadLinksOriginal(companyName) {
 } //! This is the original function that downloaded the file into a specific folder and renamed it. However, you can only do it on one page before it starts rerouting your traffic to a bot checker, and it becomes impossible to run this code again. USE RESULT.COMPANYNAME to pass companyname, not REQUEST.
 
 
-async function downloadAllLinks() {
-    let links = document.querySelectorAll('a[id^="head-pagination-item-"]:not([aria-label="Next Page"], [aria-label="Page 1"])');
+async function processAllLinks(mode) {
+    let pageLinks = document.querySelectorAll('a[id^="head-pagination-item-"]:not([aria-label="Next Page"], [aria-label="Page 1"])');
     await downloadLinksSimple();
-    for (let link of links) {
+    for (let pageLink of pageLinks) {
         console.log("Going to Next Page")
-        link.click();
-        await new Promise(resolve => setTimeout(resolve, 1500))
-        await downloadLinksSimple();
+        pageLink.click();
+        await new Promise(resolve => setTimeout(resolve, 3000))
+        if (mode === 'downloadAll') {
+            await downloadLinksSimple();
+        } else if (mode === 'linkAll') {
+            grabLinks();
+
+        }
     }
 }
-
 
 function grabLinks() {
     let data = [];

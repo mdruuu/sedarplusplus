@@ -87,11 +87,11 @@ function performSearch() {
 
 function sendMessage(tabId) {
   const companyName = document.getElementById('companyName').value;    
-  const selectElement = document.getElementById('documentType');
-  const selectedValues = Array.from(selectElement.selectedOptions).map(option => option.value);
+  const fileTypeElement = document.getElementById('filingType');
+  const fileTypeFilters = Array.from(fileTypeElement.selectedOptions).map(option => option.value);
   const modeType = document.getElementById('mode-type').value;
 
-  chrome.storage.local.set({ searchRequested: true, companyName: companyName, selectedValues: selectedValues, modeType: modeType }, function() {
+  chrome.storage.local.set({ searchRequested: true, companyName: companyName, fileTypeFilters: fileTypeFilters, modeType: modeType }, function() {
     chrome.tabs.sendMessage(tabId, { action: 'search', companyName: companyName});
     chrome.runtime.sendMessage({ action: 'reset_count' });
     // console.log('Message Sent');
