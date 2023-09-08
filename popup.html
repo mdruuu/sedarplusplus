@@ -5,7 +5,7 @@
     <title>Sedar++</title>
     <style>
       body {
-        width: 280px;
+        width: 300px;
         margin: 5px;
         display: flex;
         flex-direction: column;
@@ -53,6 +53,10 @@
       #statusPane h2 {
         text-align: center; /* Center the 'System Message' text */
       }
+      #resetBtn {
+        background-color: red; /* Make the button red */
+        color: white; /* Make the button text white */        
+      }
     </style>
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
@@ -63,9 +67,8 @@
   <body>
     <div class="input-grid">
       <div class="input-row">
-        <!-- <label for="companyName">Company Name: </label> -->
-        <input type="text" id="companyName" placeholder="Name">
         <button id="resetBtn">Reset</button>
+        <input type="text" id="companyName" placeholder="Name">
         <button id="searchBtn">Search</button>      
       </div>
       <div class="input-row">
@@ -83,11 +86,14 @@
           <option value="LONG_FORM_PROSPECTUS">Prospectus</option>
         </select>
       </div>
-      <div class="download-boxes">
-        <input type="checkbox" id="downloadMode" name="downloadMode">
-        <label for="downloadMode">Download Mode</label>
-        <input type="checkbox" id="downloadAll" name="downloadAll">
-        <label for ="downloadAll">Download All</label>
+      <div class="input-roww">
+        <label for="mode-type">Mode</label>
+        <select id="mode-type">
+          <option value="Regular">Company Page</option>
+          <option value="Link">Document Selector</option>
+          <option value="Download">Downloader</option>
+          <option value="DownloadAll">Download All - EXPERIMENTAL</option>
+        </select>
       </div>
     </div>
     
