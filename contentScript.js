@@ -125,7 +125,13 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 });
 
 async function grabDocument(date, text) {
-    await removeOption();
+    let removeButton = document.querySelector(
+        ".select2-selection__choice__remove"
+    )
+    if (removeButton) {
+        console.log('Filters Still Applied. Removing')
+        await removeOption(); // Reset the page by removing any remaining options.
+    }
     let startDate = document.querySelector('#DocumentDate')
     let endDate = document.querySelector('#DocumentDate2')
     let searchButton = document.querySelector(".appButton.searchDocuments-tabs-criteriaAndButtons-buttonPad2-search.appButtonPrimary.appSearchButton.appSubmitButton.appPrimaryButton.appNotReadOnly.appIndex1");
@@ -137,7 +143,9 @@ async function grabDocument(date, text) {
 
     startDate.value = date;
     endDate.value = date;
+    console.log("Searching for Specific Date")
     searchButton.click();
+    await waitForElementToDisappear('catProcessing')
     // Look for the element and click on the link where span == text
     let links = document.querySelectorAll('.appDocumentView.appResourceLink.appDocumentLink');
     for (let link of links) {
@@ -152,11 +160,16 @@ async function grabDocument(date, text) {
 
 
 async function processFileTypes(modeType, fileType, actionFunction) {
+    let combinedAllData = []
     for (let i = 0; i < fileType.length; i++) {
-        await actionFunction();
+        let allData = await actionFunction();
+        combinedAllData.push(...allData);
         if (i < fileType.length - 1) {
             await removeOption();
         }
+    }
+    if (modeType === 'LinkAll') {
+        chrome.runtime.sendMessage({action: 'update_sidePane', data: JSON.stringify(combinedAllData)});
     }
     console.log("Finished processing.")
 }
@@ -224,10 +237,8 @@ function processAllLinks(mode) {
             let data = (mode === 'DownloadAll') ? await downloadLinksSimple() : await grabLinks(page);
                 if (mode === 'LinkAll') allData.push(...data);
         }
-        if (mode === 'LinkAll') {
-            chrome.runtime.sendMessage({action: 'update_sidePane', data: JSON.stringify(allData)});
-        }
-    }
+        return allData
+    } 
 }
 
 async function grabLinks(page) {

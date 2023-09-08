@@ -5,7 +5,7 @@
     <title>Sedar++</title>
     <style>
       body {
-        width: 290px;
+        width: 400px;
         margin: 5px;
         display: flex;
         flex-direction: column;
@@ -59,10 +59,6 @@
       #statusPane h2 {
         text-align: center; /* Center the 'System Message' text */
       }
-      #resetBtn {
-        background-color: red; /* Make the button red */
-        color: white; /* Make the button text white */        
-      }
     </style>
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
@@ -73,7 +69,6 @@
   <body>
     <div class="input-grid">
       <div class="input-row">
-        <button id="resetBtn">Reset</button>
         <input type="text" id="companyName" placeholder="Name">
         <button id="searchBtn">Search</button>      
       </div>
@@ -101,7 +96,7 @@
           <option value="Download">Downloader</option>
           <option value="DownloadAll">Download All - EXPERIMENTAL</option>
         </select>
-        <input type="number" id="year" placeholder="Yr: All">
+        <input type="number" id="year" placeholder="Cutoff Year">
       </div>
     </div>
     

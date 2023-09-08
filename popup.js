@@ -25,6 +25,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     if (request.action === 'update_sidePane') {
       statusPane.innerHTML = ''
       let allData = JSON.parse(request.data)
+      allData.sort((a, b) => new Date(b.date) - new Date(a.date));
       statusPane.innerHTML = `<table><tr><th>Page</th><th>Title</th><th>Date</th></tr>${allData.map(data => `<tr><td>${data.page}</td><td><a href="#" data-date="${data.date}">${data.text}</a></td><td>${data.date}</td></tr>`).join('')}</table>`;
     }
 });
