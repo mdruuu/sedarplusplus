@@ -81,6 +81,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                         console.log('Company Documents Page Loaded');
 
                         // first, do 2 clicks on sort, to sort by descending order.
+                        
                         let clickCount = 0;
                         const intervalId = setInterval(() => {
                             const xpath = "//a[.//span[contains(text(), 'Submitted date')]]";
@@ -90,22 +91,14 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                                 matchingElement.click();
                                 if (clickCount === 2) {
                                     clearInterval(intervalId);
-                                    
-                                    
+                                                
                                     setTimeout(async () => {
-                                        const actionFunctionMap = {
-                                            'Download': downloadLinksSimple,
-                                            'DownloadAll': processAllLinks('DownloadAll'),
-                                            'Link': grabLinks,
-                                            'LinkAll': processAllLinks('LinkAll')
-                                        };
-
                                         let select = document.getElementById('FilingType');
                                         if (!result.fileTypeFilters.includes("All")) {
                                             await selectValues(result.fileTypeFilters, select);
                                         };
                                         if (result.modetype !== "Regular") {
-                                            await processFileTypes(result.modeType, result.fileTypeFilters, actionFunctionMap[result.modeType]);
+                                            await processFileTypes(result.modeType, result.fileTypeFilters, result.cutoffYear);
                                         }
                                     }, 2000);
                                 }
@@ -159,16 +152,27 @@ async function grabDocument(date, text) {
 }
 
 
-async function processFileTypes(modeType, fileType, actionFunction) {
+async function processFileTypes(modeType, fileType, cutoffYear) {
     let combinedAllData = []
+
     for (let i = 0; i < fileType.length; i++) {
-        let allData = await actionFunction();
-        combinedAllData.push(...allData);
+        if (modeType === "Download") {
+            await downloadLinksSimple();
+        } 
+        if (modeType === "Link") {
+            let allData = await grabLinks(1);
+            combinedAllData.push(...allData);
+        }
+        if (modeType === 'DownloadAll' || modeType === 'LinkAll') {
+            let allData = await processMultiPages(modeType, cutoffYear);
+            combinedAllData.push(...allData);
+        }
         if (i < fileType.length - 1) {
             await removeOption();
         }
     }
-    if (modeType === 'LinkAll') {
+    if (modeType === 'Link' || modeType === 'LinkAll') {
+        console.log(modeType)
         chrome.runtime.sendMessage({action: 'update_sidePane', data: JSON.stringify(combinedAllData)});
     }
     console.log("Finished processing.")
@@ -206,39 +210,37 @@ async function downloadLinksOriginal(companyName) {
 } //! This is the original function that downloaded the file into a specific folder and renamed it. However, you can only do it on one page before it starts rerouting your traffic to a bot checker, and it becomes impossible to run this code again. USE RESULT.COMPANYNAME to pass companyname, not REQUEST.
 
 
-function processAllLinks(mode) {
-    return async function() {
-        let dateId = '.appAttrDateTime .appAttrValue span[aria-hidden="true"]'
-        let rowElement = document.querySelector('.appTblRow.appTblRow0');
-        let newDate;
-        let oldDate = rowElement.querySelector(dateId).textContent;
+async function processMultiPages(mode, cutoffYear) {
+    let dateId = '.appAttrDateTime .appAttrValue span[aria-hidden="true"]'
+    let rowElement = document.querySelector('.appTblRow.appTblRow0');
+    let newDate;
+    let oldDate = rowElement.querySelector(dateId).textContent;
 
-        let pageLinks = document.querySelectorAll('a[id^="head-pagination-item-"]:not([aria-label="Next Page"], [aria-label="Page 1"])');
-        let allData = [];
-        let page = 1
+    let pageLinks = document.querySelectorAll('a[id^="head-pagination-item-"]:not([aria-label="Next Page"], [aria-label="Page 1"])');
+    let allData = [];
+    let page = 1
 
+    let data = (mode === 'DownloadAll') ? await downloadLinksSimple() : await grabLinks(page);
+        if (mode === 'LinkAll') allData.push(...data);
+    for (let pageLink of pageLinks) {   
+        console.log("Going to Next Page")
+        pageLink.click();
+        await new Promise(resolve => {
+            const intervalId = setInterval(() => {
+                let rowElement = document.querySelector('.appTblRow.appTblRow0');
+                    newDate = rowElement.querySelector(dateId).textContent;
+                if (newDate !== oldDate) {
+                    clearInterval(intervalId);
+                    resolve();
+                }
+            }, 100); // Check every 100ms
+        });
+        page += 1
+        oldDate = newDate;
         let data = (mode === 'DownloadAll') ? await downloadLinksSimple() : await grabLinks(page);
             if (mode === 'LinkAll') allData.push(...data);
-        for (let pageLink of pageLinks) {   
-            console.log("Going to Next Page")
-            pageLink.click();
-            await new Promise(resolve => {
-                const intervalId = setInterval(() => {
-                    let rowElement = document.querySelector('.appTblRow.appTblRow0');
-                     newDate = rowElement.querySelector(dateId).textContent;
-                    if (newDate !== oldDate) {
-                        clearInterval(intervalId);
-                        resolve();
-                    }
-                }, 100); // Check every 100ms
-            });
-            page += 1
-            oldDate = newDate;
-            let data = (mode === 'DownloadAll') ? await downloadLinksSimple() : await grabLinks(page);
-                if (mode === 'LinkAll') allData.push(...data);
-        }
-        return allData
-    } 
+    }
+    return allData
 }
 
 async function grabLinks(page) {
@@ -260,11 +262,11 @@ async function grabLinks(page) {
 
 
 
-function updateLinksPage(combinedLinks) {
-    console.log("Sending update_links")
-    // console.log(combinedLinks)
-    chrome.runtime.sendMessage({action: "update_links", data: combinedLinks});
-}
+// function updateLinksPage(combinedLinks) {
+//     console.log("Sending update_links")
+//     // console.log(combinedLinks)
+//     chrome.runtime.sendMessage({action: "update_links", data: combinedLinks});
+// }
 
 
 
