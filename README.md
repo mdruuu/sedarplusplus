@@ -1,11 +1,14 @@
 # sedarplusplus
 Sedar+ sucks. This chrome extension makes it suck a little less.
 
-This is a simple chrome extension. 
+### Installation 
+
 To use it, click on <> Code -> Local -> Download ZIP. 
 Unzip it into a folder. 
 Go to Chrome / Edge, and go to extensions page, then turn on developer mode.
 Click on load unpacked and select the folder. 
+
+### Use Case
 
 The extension has three modes. 
 1. Company Doc Page
@@ -26,7 +29,4 @@ Use Link Grabber Multi if you want to collect links from multiple pages per fili
 
 Similar to Link Grabber, use with multiple filing types 
 
-Note: Sedar's filter functionality is busted. I am not exaggerating when I say this. Multiple filingtype filters do not work. Documents pre 2015 do not show up in filtered. 
-
-
-
+Note: Sedar's filter functionality is busted. I am not exaggerating when I say this. Multiple filingtype filters do not work. Documents pre 2015 do not show up in filtered. As a result, Link Grabber and Doc Downloader will only show files that are from 2015 or newer. 
