@@ -19,7 +19,7 @@ console.log = function (message) {
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     // The !== search is here because the code runs on page_loaded messages. So this code block is listening for bunch of page_loaded message. THere is probably a much better / easier way to do this. Come back to it after implementing link mode. 
     if (request.action !== 'search') {
-        chrome.storage.local.get(['searchRequested', 'companyName', 'fileTypeFilters', 'modeType'], function(result) {
+        chrome.storage.local.get(['searchRequested', 'companyName', 'fileTypeFilters', 'modeType', 'cutoffYear'], function(result) {
             if (result.searchRequested) {
                 switch (request.action) {
                     case 'page_loaded0':
@@ -154,7 +154,6 @@ async function grabDocument(date, text) {
 
 async function processFileTypes(modeType, fileType, cutoffYear) {
     let combinedAllData = []
-
     for (let i = 0; i < fileType.length; i++) {
         if (modeType === "Download") {
             await downloadLinksSimple();
@@ -214,7 +213,7 @@ async function processMultiPages(mode, cutoffYear) {
     let dateId = '.appAttrDateTime .appAttrValue span[aria-hidden="true"]'
     let rowElement = document.querySelector('.appTblRow.appTblRow0');
     let newDate;
-    let oldDate = rowElement.querySelector(dateId).textContent;
+    let oldDate = rowElement.querySelector(dateId).textContent; 
 
     let pageLinks = document.querySelectorAll('a[id^="head-pagination-item-"]:not([aria-label="Next Page"], [aria-label="Page 1"])');
     let allData = [];
@@ -239,6 +238,15 @@ async function processMultiPages(mode, cutoffYear) {
         oldDate = newDate;
         let data = (mode === 'DownloadAll') ? await downloadLinksSimple() : await grabLinks(page);
             if (mode === 'LinkAll') allData.push(...data);
+
+        let dateElements = document.querySelectorAll('.appTblRow ' + dateId);
+        let minYear = Math.min(...Array.from(dateElements).map(el => new Date(el.textContent).getFullYear()));
+        console.log(cutoffYear)
+
+        if (parseInt(minYear) < parseInt(cutoffYear)) {
+            console.log('Reached Specified Year. Stopping');
+            break;
+        }
     }
     return allData
 }
