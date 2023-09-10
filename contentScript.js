@@ -158,11 +158,11 @@ async function processFileTypes(modeType, fileType, cutoffYear) {
         if (modeType === "Download") {
             await downloadDocSimple();
         } 
-        if (modeType === "Link") {
+        else if (modeType === "Link") {
             let allData = await grabLinks(1);
             combinedAllData.push(...allData);
         }
-        if (modeType === 'DownloadAll' || modeType === 'LinkAll') {
+        else if (modeType === 'DownloadAll' || modeType === 'LinkAll') {
             let allData = await processMultiPages(modeType, cutoffYear);
             combinedAllData.push(...allData);
         }
@@ -182,13 +182,13 @@ async function downloadDocSimple(cutoffYear) {
     let clickNextPage = ''
     for (let linkElement of linkElements) {
         let linkName = linkElement.querySelector('span').textContent;
-        let rowElement = linkElement.closest('.appTblRow');
-        let rowNum = rowElement.className;
-        let dateElement = rowElement.querySelector('.appAttrDateTime .appAttrValue span[aria-hidden="true"]').textContent;
-        // dateElement = dateElement.substring(0, 9);
-        let rowYear = dateElement.getFullYear();
+        let row = linkElement.closest('.appTblRow');
+        let rowNum = row.className;
+        let dateElement = row.querySelector('.appAttrDateTime .appAttrValue span[aria-hidden="true"]');
+        let date = new Date(dateElement.textContent);
+        let rowYear = date.getFullYear();
         if (rowYear >= cutoffYear) {
-            console.log(`Downloading: ${rowNum} Date: ${dateElement}`)
+            console.log(`Downloading: ${rowNum} Date: ${date}`)
             // linkElement.click();
             clickNextPage = 'Yes'
         } else {
