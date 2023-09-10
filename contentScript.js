@@ -179,7 +179,7 @@ async function processFileTypes(modeType, fileType, cutoffYear) {
 
 async function downloadDocSimple(cutoffYear) {
     let linkElements = document.querySelectorAll('.appTblCell2 a.appDocumentView.appResourceLink.appDocumentLink');
-    let clickNextPage = ''
+    let clickNextPage = 'No'
     for (let linkElement of linkElements) {
         let linkName = linkElement.querySelector('span').textContent;
         let row = linkElement.closest('.appTblRow');
@@ -227,11 +227,11 @@ async function processMultiPages(mode, cutoffYear) {
     let maxPage = Math.max(...Array.from(pageLinks).map(link => parseInt(link.textContent)));
     let allData = [];
 
-    for (let page = 2; page < maxPage; page++) {
+    for (let page = 1; page < maxPage; page++) {
         let result = (mode === 'DownloadAll') ? await downloadDocSimple(cutoffYear) : await grabLinks(page, cutoffYear);
         let data = result.data;
         if (mode === 'LinkAll') allData.push(...data);
-        
+    
         let clickNextPage = result.clickNextPage;
         if (clickNextPage === 'No') break;
         let nextPageLink = document.querySelector('a[aria-label="Next Page"]');        
@@ -256,20 +256,24 @@ async function processMultiPages(mode, cutoffYear) {
 async function grabLinks(page, cutoffYear) {
     let data = [];
     let rows = Array.from(document.querySelectorAll('.appTblRow')); 
-    let clickNextPage = ''
+    let clickNextPage = 'No'
     for (let row of rows.slice(1)) {
         let linkElement = row.querySelector('.appTblCell2 a.appDocumentView.appResourceLink.appDocumentLink');
         let dateElement = row.querySelector('.appAttrDateTime .appAttrValue span[aria-hidden="true"]');
         let date = new Date(dateElement.textContent);
         let rowYear = date.getFullYear();
 
+        console.log(rowYear, cutoffYear)
+
         if (rowYear >= cutoffYear) {
+            console.log(`Processing rowYear ${rowYear}`)
             let link = linkElement.href;
             let text = linkElement.textContent;
             let date = dateElement.textContent;
             data.push({text: text, link: link, date: date.substring(0, 11), page: page})
             clickNextPage = 'Yes'
         } else {
+            console.log(`Does not match: ${rowYear}, ${cutoffYear}`)
             clickNextPage = 'No'
             break
         }
