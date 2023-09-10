@@ -27,7 +27,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       let allData = JSON.parse(request.data)
       allData.sort((a, b) => new Date(b.date) - new Date(a.date));
       let cutoffYear = document.getElementById('cutoffYear').value;
-      allData = allData.filter(data => new Date(data.date).getFullYear() > cutoffYear);
+      allData = allData.filter(data => new Date(data.date).getFullYear() >= cutoffYear);
       statusPane.innerHTML = `<table><tr><th>Page</th><th>Title</th><th>Date</th></tr>${allData.map(data => `<tr><td>${data.page}</td><td><a href="#" data-date="${data.date}">${data.text}</a></td><td>${data.date}</td></tr>`).join('')}</table>`;
     }
 });
@@ -35,11 +35,17 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 
 document.getElementById('searchBtn').addEventListener('click', performSearch);
 
-document.getElementById('companyName').addEventListener('keypress', function (e) {
-    if (e.key === 'Enter') {
-        performSearch();
-    }
-});
+
+function addEnterListener(elementId) {
+  document.getElementById(elementId).addEventListener('keypress', function (e) {
+      if (e.key === 'Enter') {
+          performSearch();
+      }
+  });
+}
+
+addEnterListener('companyName');
+addEnterListener('cutoffYear');
 
 document.addEventListener('click', function(e) {
   if (e.target.tagName === 'A' && e.target.hasAttribute('data-date')) {

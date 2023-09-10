@@ -156,7 +156,7 @@ async function processFileTypes(modeType, fileType, cutoffYear) {
     let combinedAllData = []
     for (let i = 0; i < fileType.length; i++) {
         if (modeType === "Download") {
-            await downloadLinksSimple();
+            await downloadDocSimple();
         } 
         if (modeType === "Link") {
             let allData = await grabLinks(1);
@@ -177,20 +177,28 @@ async function processFileTypes(modeType, fileType, cutoffYear) {
     console.log("Finished processing.")
 }
 
-async function downloadLinksSimple() {
+async function downloadDocSimple(cutoffYear) {
     let linkElements = document.querySelectorAll('.appTblCell2 a.appDocumentView.appResourceLink.appDocumentLink');
+    let clickNextPage = ''
     for (let linkElement of linkElements) {
         let linkName = linkElement.querySelector('span').textContent;
         let rowElement = linkElement.closest('.appTblRow');
         let rowNum = rowElement.className;
         let dateElement = rowElement.querySelector('.appAttrDateTime .appAttrValue span[aria-hidden="true"]').textContent;
         // dateElement = dateElement.substring(0, 9);
-        console.log(`Downloading: ${rowNum} Date: ${dateElement}`)
-
-        // linkElement.click();
+        let rowYear = dateElement.getFullYear();
+        if (rowYear >= cutoffYear) {
+            console.log(`Downloading: ${rowNum} Date: ${dateElement}`)
+            // linkElement.click();
+            clickNextPage = 'Yes'
+        } else {
+            clickNextPage = 'No'
+            break
+        }
         let delay = Math.floor(Math.random() * 750);
         await new Promise(resolve => setTimeout(resolve, 750 + delay));
     }
+    return clickNextPage
 }
 
 async function downloadLinksOriginal(companyName) {
@@ -215,15 +223,19 @@ async function processMultiPages(mode, cutoffYear) {
     let newDate;
     let oldDate = rowElement.querySelector(dateId).textContent; 
 
-    let pageLinks = document.querySelectorAll('a[id^="head-pagination-item-"]:not([aria-label="Next Page"], [aria-label="Page 1"])');
+    let pageLinks = document.querySelectorAll('a[id^="head-pagination-item-"]:not([aria-label="Next Page"])');
+    let maxPage = Math.max(...Array.from(pageLinks).map(link => parseInt(link.textContent)));
     let allData = [];
-    let page = 1
 
-    let data = (mode === 'DownloadAll') ? await downloadLinksSimple() : await grabLinks(page);
+    for (let page = 2; page < maxPage; page++) {
+        let result = (mode === 'DownloadAll') ? await downloadDocSimple(cutoffYear) : await grabLinks(page, cutoffYear);
+        let data = result.data;
         if (mode === 'LinkAll') allData.push(...data);
-    for (let pageLink of pageLinks) {   
-        console.log("Going to Next Page")
-        pageLink.click();
+        
+        let clickNextPage = result.clickNextPage;
+        if (clickNextPage === 'No') break;
+        let nextPageLink = document.querySelector('a[aria-label="Next Page"]');        
+        if (nextPageLink) nextPageLink.click();
         await new Promise(resolve => {
             const intervalId = setInterval(() => {
                 let rowElement = document.querySelector('.appTblRow.appTblRow0');
@@ -234,38 +246,35 @@ async function processMultiPages(mode, cutoffYear) {
                 }
             }, 100); // Check every 100ms
         });
-        page += 1
         oldDate = newDate;
-        let data = (mode === 'DownloadAll') ? await downloadLinksSimple() : await grabLinks(page);
-            if (mode === 'LinkAll') allData.push(...data);
-
-        let dateElements = document.querySelectorAll('.appTblRow ' + dateId);
-        let minYear = Math.min(...Array.from(dateElements).map(el => new Date(el.textContent).getFullYear()));
-        console.log(cutoffYear)
-
-        if (parseInt(minYear) < parseInt(cutoffYear)) {
-            console.log('Reached Specified Year. Stopping');
-            break;
-        }
+        
     }
-    return allData
+    return allData 
+
 }
 
-async function grabLinks(page) {
+async function grabLinks(page, cutoffYear) {
     let data = [];
-    let rows = document.querySelectorAll('.appTblRow'); 
-    for (let row of rows) {
+    let rows = Array.from(document.querySelectorAll('.appTblRow')); 
+    let clickNextPage = ''
+    for (let row of rows.slice(1)) {
         let linkElement = row.querySelector('.appTblCell2 a.appDocumentView.appResourceLink.appDocumentLink');
         let dateElement = row.querySelector('.appAttrDateTime .appAttrValue span[aria-hidden="true"]');
+        let date = new Date(dateElement.textContent);
+        let rowYear = date.getFullYear();
 
-        if (linkElement && dateElement) {
+        if (rowYear >= cutoffYear) {
             let link = linkElement.href;
             let text = linkElement.textContent;
             let date = dateElement.textContent;
             data.push({text: text, link: link, date: date.substring(0, 11), page: page})
-        };
+            clickNextPage = 'Yes'
+        } else {
+            clickNextPage = 'No'
+            break
+        }
     };
-    return data;
+    return {data: data, clickNextPage: clickNextPage};
 };
 
 
