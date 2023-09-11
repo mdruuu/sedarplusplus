@@ -59,7 +59,7 @@
       #statusPane h2 {
         text-align: center; /* Center the 'System Message' text */
       }
-      #resetBtn {
+      #clearBtn {
         background-color: red;
         color: white;
       }
@@ -74,7 +74,9 @@
     <div class="input-grid">
       <div class="input-row">
         <input type="text" id="companyName" placeholder="Name">
-        <button id="searchBtn">Search</button>      
+        <button id="clearBtn">Clear</button>
+        <button id="searchBtn">Search</button>
+        <button id="stopBtn">Stop</button>
       </div>
       <div class="input-row">
         <label for="filingType">Filing Type:</label>
@@ -109,6 +111,7 @@
       <span>Select type of document you want to search for.</span><br>
       <span>Note that currently, SEDAR multi-doc filter is broken. Until then, you can only filter for a single document type at a time.</span>
     </div>
+    <button id="reloadBtn">RELOAD</button> 
     <script src="popup.js"></script>
   </body>
 </html>

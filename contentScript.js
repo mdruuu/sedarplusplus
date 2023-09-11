@@ -18,6 +18,7 @@ console.log = function (message) {
 
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     // The !== search is here because the code runs on page_loaded messages. So this code block is listening for bunch of page_loaded message. THere is probably a much better / easier way to do this. Come back to it after implementing link mode. 
+    
     if (request.action !== 'search') {
         chrome.storage.local.get(['searchRequested', 'companyName', 'fileTypeFilters', 'modeType', 'cutoffYear'], function(result) {
             console.log(result.searchRequested)
@@ -174,7 +175,7 @@ async function processFileTypes(modeType, fileType, cutoffYear) {
     }
     if (modeType === 'Link' || modeType === 'LinkAll') {
         console.log(modeType)
-        chrome.runtime.sendMessage({action: 'update_sidePane', data: JSON.stringify(combinedAllData)});
+        chrome.runtime.sendMessage({action: 'update_statusPane', data: JSON.stringify(combinedAllData)});
     }
     console.log("Finished processing.")
 }
