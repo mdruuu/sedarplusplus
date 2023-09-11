@@ -155,7 +155,6 @@ async function grabDocument(date, text) {
 async function processFileTypes(modeType, fileType, cutoffYear) {
     let combinedAllData = []
     for (let i = 0; i < fileType.length; i++) {
-        console.log(`File Type Length: ${fileType.length}`);
         if (modeType === "Download") {
             await downloadDocSimple();
         } 
@@ -168,6 +167,7 @@ async function processFileTypes(modeType, fileType, cutoffYear) {
             combinedAllData.push(...allData);
         }
         if (i < fileType.length - 1) {
+            console.log("Running removeOption")
             await removeOption();
         }
     }
@@ -226,9 +226,14 @@ async function processMultiPages(mode, cutoffYear) {
 
     let pageLinks = document.querySelectorAll('a[id^="head-pagination-item-"]:not([aria-label="Next Page"])');
     let maxPage = Math.max(...Array.from(pageLinks).map(link => parseInt(link.textContent)));
+    console.log(pageLinks)
+     if (pageLinks.length === 0) {
+         maxPage = 1;
+     }
     let allData = [];
 
     for (let page = 1; page <= maxPage; page++) {
+        console.log("Running For Loop")
         let result = (mode === 'DownloadAll') ? await downloadDocSimple(cutoffYear) : await grabLinks(page, cutoffYear);
         let data = result.data;
         if (mode === 'LinkAll') allData.push(...data);
@@ -251,6 +256,7 @@ async function processMultiPages(mode, cutoffYear) {
             oldDate = newDate;
         }   
     }
+    console.log("Exited For Loop")
     return allData 
 }
 
