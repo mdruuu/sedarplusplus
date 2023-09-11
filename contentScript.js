@@ -155,6 +155,7 @@ async function grabDocument(date, text) {
 async function processFileTypes(modeType, fileType, cutoffYear) {
     let combinedAllData = []
     for (let i = 0; i < fileType.length; i++) {
+        console.log(`File Type Length: ${fileType.length}`);
         if (modeType === "Download") {
             await downloadDocSimple();
         } 
@@ -227,30 +228,30 @@ async function processMultiPages(mode, cutoffYear) {
     let maxPage = Math.max(...Array.from(pageLinks).map(link => parseInt(link.textContent)));
     let allData = [];
 
-    for (let page = 1; page < maxPage; page++) {
+    for (let page = 1; page <= maxPage; page++) {
         let result = (mode === 'DownloadAll') ? await downloadDocSimple(cutoffYear) : await grabLinks(page, cutoffYear);
         let data = result.data;
         if (mode === 'LinkAll') allData.push(...data);
-    
-        let clickNextPage = result.clickNextPage;
-        if (clickNextPage === 'No') break;
-        let nextPageLink = document.querySelector('a[aria-label="Next Page"]');        
-        if (nextPageLink) nextPageLink.click();
-        await new Promise(resolve => {
-            const intervalId = setInterval(() => {
-                let rowElement = document.querySelector('.appTblRow.appTblRow0');
-                    newDate = rowElement.querySelector(dateId).textContent;
-                if (newDate !== oldDate) {
-                    clearInterval(intervalId);
-                    resolve();
-                }
-            }, 100); // Check every 100ms
-        });
-        oldDate = newDate;
         
+        if (page < maxPage) {
+            let clickNextPage = result.clickNextPage;
+            if (clickNextPage === 'No') break;
+            let nextPageLink = document.querySelector('a[aria-label="Next Page"]');        
+            if (nextPageLink) nextPageLink.click();
+            await new Promise(resolve => {
+                const intervalId = setInterval(() => {
+                    let rowElement = document.querySelector('.appTblRow.appTblRow0');
+                        newDate = rowElement.querySelector(dateId).textContent;
+                    if (newDate !== oldDate) {
+                        clearInterval(intervalId);
+                        resolve();
+                    }
+                }, 100); // Check every 100ms
+            });
+            oldDate = newDate;
+        }   
     }
     return allData 
-
 }
 
 async function grabLinks(page, cutoffYear) {
@@ -263,10 +264,7 @@ async function grabLinks(page, cutoffYear) {
         let date = new Date(dateElement.textContent);
         let rowYear = date.getFullYear();
 
-        console.log(rowYear, cutoffYear)
-
         if (rowYear >= cutoffYear) {
-            console.log(`Processing rowYear ${rowYear}`)
             let link = linkElement.href;
             let text = linkElement.textContent;
             let date = dateElement.textContent;
