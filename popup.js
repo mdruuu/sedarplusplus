@@ -1,9 +1,10 @@
 window.onload = function() {
+  chrome.storage.local.set({ searchRequested: false })
   document.getElementById('companyName').focus();
-  $('#documentType').multiselect({
-    includeSelectAllOption: true,
-    enableClickableOptGroups: true
-  });
+  // $('#documentType').multiselect({
+  //   includeSelectAllOption: true,
+  //   enableClickableOptGroups: true
+  // });
 };
 
 
@@ -34,8 +35,6 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 
 
 document.getElementById('searchBtn').addEventListener('click', performSearch);
-
-
 function addEnterListener(elementId) {
   document.getElementById(elementId).addEventListener('keypress', function (e) {
       if (e.key === 'Enter') {
@@ -43,7 +42,6 @@ function addEnterListener(elementId) {
       }
   });
 }
-
 addEnterListener('companyName');
 addEnterListener('cutoffYear');
 

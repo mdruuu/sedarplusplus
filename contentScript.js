@@ -20,6 +20,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     // The !== search is here because the code runs on page_loaded messages. So this code block is listening for bunch of page_loaded message. THere is probably a much better / easier way to do this. Come back to it after implementing link mode. 
     if (request.action !== 'search') {
         chrome.storage.local.get(['searchRequested', 'companyName', 'fileTypeFilters', 'modeType', 'cutoffYear'], function(result) {
+            console.log(result.searchRequested)
             if (result.searchRequested) {
                 switch (request.action) {
                     case 'page_loaded0':
@@ -283,16 +284,7 @@ async function grabLinks(page, cutoffYear) {
         }
     };
     return {data: data, clickNextPage: clickNextPage};
-};
-
-
-
-// function updateLinksPage(combinedLinks) {
-//     console.log("Sending update_links")
-//     // console.log(combinedLinks)
-//     chrome.runtime.sendMessage({action: "update_links", data: combinedLinks});
-// }
-
+}
 
 
 async function removeOption() {
@@ -314,7 +306,6 @@ async function removeOption() {
 
 }
 
-
 async function selectValues(values, select) {
     console.log(`Filtering for: ${values}`);
     for(let i = 0; i < select.options.length; i++) {
@@ -334,7 +325,6 @@ async function selectValues(values, select) {
     }
     await new Promise(resolve => setTimeout(resolve, 2000));
 }
-
 
 function waitForElementToDisappear(elementId) {
     return new Promise(resolve => {
