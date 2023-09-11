@@ -104,47 +104,70 @@ document.addEventListener('click', function(e) {
 });
 
 
-function performSearch() {
-  // Check which page you're on
-  // if Reporting Issuers List in <title>
-  // if View Issuer Profile in <title> -> check for appPageTitle / appPageTitleText and see if it matches comapny name.
-  // If on Issuer Profile page, can just click on the link.
+chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+  if (request.action === 'queryTab') {
+    chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+      let tabId = tabs[0].id;
+      const title = request.title;
+      const issuerProfileName = request.issuerProfileName.toLowerCase();
+      const searchPageName = request.searchPageName.toLowerCase();
+      const companyName = companyNameElement.value.toLowerCase();
 
-  // If Search in <title> -> check appAttrValue to see if company name is correct + FilingType is empty.. 
-  // If everything checks out, can just refresh page and do the last bit. chrome.tabs.reload()
-
-
-  statusPaneElement.innerHTML = '';
-  console.log('Search Request Received.')
-  chrome.storage.local.clear(function() {
-    console.log("Storage Cleared.")
-  });
-  console.log('Navigating to Sedar+.')
-  
-  chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
-    const tabId = tabs[0].id;
-    const targetUrl = 'https://www.sedarplus.ca/csa-party/service/create.html?targetAppCode=csa-party&service=searchReportingIssuers&_locale=en'
-    const landingUrl = 'https://www.sedarplus.ca/landingpage/'
-
-    chrome.tabs.update(tabId, { url: targetUrl }, async function(tab) {
-      sendMessage(tabId);
-      await new Promise(resolve => setTimeout(resolve, 3500));
-      chrome.tabs.query({active: true, currentWindow: true}, function(tabs) {
-        if (tabs[0].url === landingUrl) {
-          console.log("Sedar+ Rerouted us. Reloading.");
-          chrome.tabs.update(tabId, { url: targetUrl }, function(tab) {
-          sendMessage(tabId);
-          });
-        }
-      }); 
+      if (title === 'Reporting issuers list') {
+        sendMessage(tabId, 'issuerSearchPage');
+      } else if (title === "View Isser Profile" && issuerProfileName.includes(companyName)) {
+        sendMessage(tabId, 'profilePage');
+      } else if (title === 'Search' && searchPageName.includes(companyName)) {
+        sendMessage(tabId, 'docSearchPage');
+      } else {
+        navigateToSedarPlus(tabId);
+      }
     });
-  })};
+  }
+});
 
-function sendMessage(tabId) {
+function performSearch() {
+  statusPaneElement.innerHTML = '';
+  console.log('Search Request Received.');
+  chrome.storage.local.clear();
+  chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+    let tabId = tabs[0].id
+    chrome.tabs.sendMessage(tabId, {action: 'preload'});
+    console.log("Request Sent")
+  })
+}
+
+function navigateToSedarPlus(tabId) {
+  const targetUrl = 'https://www.sedarplus.ca/csa-party/service/create.html?targetAppCode=csa-party&service=searchReportingIssuers&_locale=en';
+  const landingUrl = 'https://www.sedarplus.ca/landingpage/';
+
+  console.log('Navigating to Sedar+.');
+  chrome.tabs.update(tabId, { url: targetUrl }, async function(tab) {
+    sendMessage(tabId, 'issuerSearchPage');
+    await new Promise(resolve => setTimeout(resolve, 3500));
+    chrome.tabs.query({active: true, currentWindow: true}, function(tabs) {
+      if (tabs[0].url === landingUrl) {
+        console.log("Sedar+ Rerouted us. Reloading.");
+        chrome.tabs.update(tabId, { url: targetUrl }, function(tab) {
+          sendMessage(tabId, 'issuerSearchPage');
+        });
+      }
+    });
+  });
+}
+
+
+
+
+
+
+    
+
+function sendMessage(tabId, pageMessage) {
   const fileTypeFilters = Array.from(filingTypeElement.selectedOptions).map(option => option.value);
 
   chrome.storage.local.set({ searchRequested: true, companyName: companyNameElement.value, fileTypeFilters: fileTypeFilters, modeType: modeTypeElement.value, cutoffYear: cutoffYearElement.value }, function() {
-    chrome.tabs.sendMessage(tabId, { action: 'search', companyName: companyNameElement});
+    chrome.tabs.sendMessage(tabId, { action: 'search', companyName: companyNameElement, page: pageMessage});
     chrome.runtime.sendMessage({ action: 'reset_count' });
   }); 
 }
