@@ -88,14 +88,11 @@ document.getElementById('stopBtn').addEventListener('click', () => {
   chrome.runtime.sendMessage( { action: "stop_running" })
 })
 
-
-
 document.addEventListener('click', function(e) {
   if (e.target.tagName === 'A' && e.target.hasAttribute('data-date')) {
     e.preventDefault();
     let date = e.target.getAttribute('data-date'); 
     let text = e.target.innerText;
-    console.log(text)
     
     chrome.tabs.query({active: true, currentWindow: true}, function(tabs) {
       chrome.tabs.sendMessage(tabs[0].id, {action: 'grab_document', date: date, text: text });
@@ -104,20 +101,38 @@ document.addEventListener('click', function(e) {
 });
 
 
+function performSearch() {
+  statusPaneElement.innerHTML = '';
+  console.log('Search Request Received.');
+  chrome.storage.local.clear();
+  chrome.tabs.query({ active: true, currentWindow: true }, function(tabs) {
+    if (tabs[0].url.includes('sedarplus')) {
+      chrome.tabs.sendMessage(tabs[0].id, {action: 'preload'});
+    } else {
+      navigateToSedarPlus(tabs[0].id)
+    }
+  })
+}
+
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   if (request.action === 'queryTab') {
     chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
       let tabId = tabs[0].id;
-      const title = request.title;
-      const issuerProfileName = request.issuerProfileName.toLowerCase();
-      const searchPageName = request.searchPageName.toLowerCase();
-      const companyName = companyNameElement.value.toLowerCase();
+      let title = request.title;
+      let issuerProfileName = request.issuerProfileName;
+      let lowerCaseIssuerProfileName = issuerProfileName.trim() !== '' ? issuerProfileName.toLowerCase() : '';
+      
+      let searchPageName = request.searchPageName;
+      let lowerCaseSearchPageName = searchPageName.trim() !== '' ? searchPageName.toLowerCase() : '';
+      
+      let companyName = companyNameElement.value.toLowerCase();
+
 
       if (title === 'Reporting issuers list') {
         sendMessage(tabId, 'issuerSearchPage');
-      } else if (title === "View Isser Profile" && issuerProfileName.includes(companyName)) {
+      } else if (title === "View Isser Profile" && lowerCaseIssuerProfileName.includes(companyName)) {
         sendMessage(tabId, 'profilePage');
-      } else if (title === 'Search' && searchPageName.includes(companyName)) {
+      } else if (title === 'Search' && lowerCaseSearchPageName.includes(companyName)) {
         sendMessage(tabId, 'docSearchPage');
       } else {
         navigateToSedarPlus(tabId);
@@ -126,16 +141,6 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   }
 });
 
-function performSearch() {
-  statusPaneElement.innerHTML = '';
-  console.log('Search Request Received.');
-  chrome.storage.local.clear();
-  chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
-    let tabId = tabs[0].id
-    chrome.tabs.sendMessage(tabId, {action: 'preload'});
-    console.log("Request Sent")
-  })
-}
 
 function navigateToSedarPlus(tabId) {
   const targetUrl = 'https://www.sedarplus.ca/csa-party/service/create.html?targetAppCode=csa-party&service=searchReportingIssuers&_locale=en';
@@ -155,12 +160,6 @@ function navigateToSedarPlus(tabId) {
     });
   });
 }
-
-
-
-
-
-
     
 
 function sendMessage(tabId, pageMessage) {

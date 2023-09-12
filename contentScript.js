@@ -15,24 +15,30 @@ console.log = function (message) {
 //     "USER1": ["USER1"]
 // }
 
-let searchRequested = ''
-let companyName = ''
-let fileTypeFilters = ''
-let modeType = ''
-let cutoffYear = ''
-let page = ''
+let searchRequested
+let companyName
+let fileTypeFilters
+let modeType 
+let cutoffYear
+let page
+let title
 
 chrome.runtime.onMessage.addListener(async (request, sender, sendResponse) => {
-    if (request.action === 'preload') {
-        console.log('request received')
-        const title = document.title
-        const issuerProfileName = document.querySelector('.appPageTitleText').textContent.toLowerCase()
-        const searchPageName = document.querySelector('.appAttrValue').textContent.toLowerCase()
-        chrome.runtime.sendMessage({action: 'queryTab', title: title, issuerProfileName: issuerProfileName, searchPageName: searchPageName})
+    if (request.action === 'page_loaded') {
+        title = document.title
+        console.log(title)
     }
-    if (request.action === 'search') {
+    if (request.action === 'preload') {
+        const title = document.title
+        const issuerProfileElement = document.querySelector('.appPageTitleText');
+        const issuerProfileName = issuerProfileElement ? issuerProfileElement.textContent : '';
+
+        const searchPageElement = document.querySelector('.appAttrValue');
+        const searchPageName = searchPageElement ? searchPageElement.textContent : '';
+        chrome.runtime.sendMessage({action: 'queryTab', title: title, issuerProfileName: issuerProfileName, searchPageName: searchPageName})
+    } else if (request.action === 'search') {
         page = request.page
-        await new promise(resolve => {
+        await new Promise(resolve => {
             chrome.storage.local.get(['searchRequested', 'companyName', 'fileTypeFilters', 'modeType', 'cutoffYear'], function(result) {
                 searchRequested = result.searchRequested
                 companyName = result.companyName
@@ -58,9 +64,7 @@ chrome.runtime.onMessage.addListener(async (request, sender, sendResponse) => {
             default:
                 console.log('Unknown page');
         }
-    }
-
-    if (request.action === 'grab_document') {
+    } else if (request.action === 'grab_document') {
         grabDocument(request.date, request.text);
     }
 })
@@ -103,7 +107,20 @@ async function findCompany(companyName) {
             console.log("Company not found in the results. Try again")
         }
     }
-    await waitForElementToDisappear('catProcessing')
+
+    // let selector = '.viewSecuritiesIssuer-tabsBox-party-profileInfoBox-searchProfileDocumentsTab-documentsSearch'
+    
+    await new Promise((resolve) => {
+        let intervalId = setInterval(function() {
+            console.log("waiting")
+            console.log(title)
+            if (title === 'View Issuer Profile') {
+                clearInterval(intervalId);
+                console.log("page_loaded")
+                resolve()
+            }
+        }, 100)
+    })
 }
 
 
@@ -115,7 +132,16 @@ async function clickDocLink() {
     targetDocLink.click();
     console.log('Clicking Doc Link')
     }
-    await waitForElementToDisappear('catProcessing')
+
+    // let selector = '.searchDocuments-tabs-criteriaAndButtons-criteria-criteriaBox'
+    await new Promise((resolve) => {
+        chrome.runtime.sendMessage({ action: 'check_page' }, (response) => {
+            if (response === 'Search') {
+                resolve()
+            }
+        })
+    })
+
 }
 
 async function searchPageProcess(fileTypeFilters, modeType, cutoffYear) {
@@ -379,3 +405,14 @@ function waitForElementToDisappear(elementId) {
 }
 
 
+function waitForElementToAppear(selector) {
+    return new Promise(resolve => {
+        const waitForAppearInvervalId = setInterval(() => {
+            const element = document.querySelector(selector);
+            if (element) {
+                clearInterval(waitForAppearInvervalId);
+                resolve();
+            }
+        }, 100)
+    })
+}
