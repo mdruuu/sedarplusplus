@@ -52,6 +52,15 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     statusPaneElement.innerHTML = `<table><tr><th>Page</th><th>Title</th><th>Date</th></tr>${allData.map(data => `<tr><td>${data.page}</td><td><a href="#" data-date="${data.date}">${data.text}</a></td><td>${data.date}</td></tr>`).join('')}</table>`;
     chrome.storage.local.set({ statusPane: statusPaneElement.innerHTML })
     }
+
+  if (request.action === 'statusPane_tempChange') {
+    let currentStatPane = statusPane.innerHTML
+    statusPane.innerHTML = ''
+    console.log("Fetching Doc. Please wait.")
+    setTimeout(() => {
+      statusPane.innerHTML = currentStatPane;
+    }, 3000);    
+  }
 });
 
 
@@ -177,11 +186,6 @@ function navigateToSedarPlus(tabId) {
 function saveVariables(tabId, pageMessage) {
   const fileTypeFilters = Array.from(filingTypeElement.selectedOptions).map(option => option.value);
 
-  chrome.storage.local.set({ searchRequested: true, companyName: companyNameElement.value, fileTypeFilters: fileTypeFilters, modeType: modeTypeElement.value, cutoffYear: cutoffYearElement.value}, function() {
-    console.log('variables saved')
-    // chrome.tabs.sendMessage(tabId, { action: 'search', companyName: companyNameElement, page: pageMessage, sender: 'popup.js'});
-    // console.log('Message Sent')
-    // chrome.runtime.sendMessage({ action: 'reset_count' });
-  }); 
+  chrome.storage.local.set({ searchRequested: true, companyName: companyNameElement.value, fileTypeFilters: fileTypeFilters, modeType: modeTypeElement.value, cutoffYear: cutoffYearElement.value}); 
 }
 

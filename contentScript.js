@@ -24,7 +24,7 @@ let page
 let title
 
 chrome.runtime.onMessage.addListener(async (request, sender, sendResponse) => {
-    console.log(`Message received: ${JSON.stringify(request)}`);    
+    // console.log(`Message received: ${JSON.stringify(request)}`);    
     if (request.action === 'preload') {
         const title = document.title
         const issuerProfileElement = document.querySelector('.appPageTitleText');
@@ -131,14 +131,74 @@ async function searchPageProcess(companyName, fileTypeFilters, modeType, cutoffY
     let searchPageElement = '.searchDocuments-tabs-criteriaAndButtons-criteria-criteriaBox-row1-multiDocSearch-multiPartyRepeaterWrapper-partynameFilterRepeater-filterDomain-entityNameNumberLookupBox-partyNameHeader'
     try {
         await checkRightPage(companyName, searchPageElement)
+        await removeOption();
     } catch {
         return;
     }
-    for (i = 0; i < 2; i++) {
+
+
+    await new Promise(resolve => setTimeout(resolve, 500)) // Need to slow down between 2nd click and calling additional functions.
+    
+    let select = document.getElementById('FilingType');
+    if (!fileTypeFilters.includes("All")) {
+        await selectValues(fileTypeFilters, select);
+    };
+    let sort = await dateClassify()
+    if (sort === 'descending') {
+        
+    } else if (sort === 'ascending') {
+        await clickSort(1);
+    } else if (sort === 'unordered' ) {
+        await clickSort(2);
+    } 
+    if (modeType !== "Regular") {
+        await processFileTypes(modeType, fileTypeFilters, cutoffYear);
+    }
+    
+    chrome.storage.local.set({ searchRequested: false })
+    console.log("Finished Processing")
+}
+
+async function dateClassify() {
+    let numTime = [];
+    let diffList = [];
+    let dateElements = '.appAttrDateTime .appAttrValue span[aria-hidden="true"]';
+    let elements = document.querySelectorAll(dateElements);
+    for (let i = 0; i < elements.length; i++) {
+        let date = elements[i]
+        let datetext = date ? date.textContent : 'NA'
+        let dateParts = datetext.split(' ');
+        let year = dateParts[2];
+        let month = new Date(dateParts[1] + ' 1, 2012').getMonth();
+        let day = dateParts[0];
+        let dateobj = new Date(year, month, day);
+        let num = dateobj.getTime();
+        numTime.push(num);
+    }
+
+    for (let i = 0; i < numTime.length - 1; i++) {
+    let diff = numTime[i] - numTime[i+1]
+    diffList.push(diff)
+    }
+
+    let allPositive = diffList.every(num => num >= 0);
+    let allNegative = diffList.every(num => num <= 0);
+
+    if (allPositive) {
+        return 'descending'
+    } else if (allNegative) {
+        return 'ascending'
+    } else {
+        return 'unordered'
+    }
+}
+
+async function clickSort(n) {
+    for (i = 0; i < n; i++) {
         let  xpath = "//a[.//span[contains(text(), 'Submitted date')]]";
         let matchingElement = document.evaluate(xpath, document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null).singleNodeValue;
         let oldDate = document.querySelector('.appAttrDateTime .appAttrValue span[aria-hidden="true"]').textContent;
-        console.log(`Sorting List. Need 2 Clicks. CLicking...${i + 1}`)
+        console.log(`Sorting List. CLicking...${i + 1}`)
         matchingElement.click();
         await new Promise(resolve => {
             const intervalId = setInterval(() => {
@@ -150,24 +210,13 @@ async function searchPageProcess(companyName, fileTypeFilters, modeType, cutoffY
             }, 100)
         })
     }
-    let select = document.getElementById('FilingType');
-    if (!fileTypeFilters.includes("All")) {
-        await selectValues(fileTypeFilters, select);
-    };
-    if (modeType !== "Regular") {
-        await processFileTypes(modeType, fileTypeFilters, cutoffYear);
-    }
 }
 
 
+
 async function grabDocument(date, text) {
-    let removeButton = document.querySelector(
-        ".select2-selection__choice__remove"
-    )
-    if (removeButton) {
-        console.log('Filters Still Applied. Removing')
-        await removeOption(); // Reset the page by removing any remaining options.
-    }
+    chrome.runtime.sendMessage({ action: 'statusPane_tempChange'})
+    await removeOption();
     let startDate = document.querySelector('#DocumentDate')
     let endDate = document.querySelector('#DocumentDate2')
     let searchButton = document.querySelector(".appButton.searchDocuments-tabs-criteriaAndButtons-buttonPad2-search.appButtonPrimary.appSearchButton.appSubmitButton.appPrimaryButton.appNotReadOnly.appIndex1");
@@ -218,8 +267,6 @@ async function processFileTypes(modeType, fileType, cutoffYear) {
         console.log(modeType)
         chrome.runtime.sendMessage({action: 'update_statusPane', data: JSON.stringify(combinedAllData)});
     }
-    console.log("Finished processing.")
-    chrome.storage.local.set({ searchRequested: false })
 }
 
 async function downloadDocSimple(cutoffYear) {
@@ -312,24 +359,24 @@ async function grabLinks(page, cutoffYear) {
     return {data: data, clickNextPage: clickNextPage};
 }
 
-
 async function removeOption() {
-    let removeButton = document.querySelector(
+    let removeButtons = document.querySelectorAll(
         ".select2-selection__choice__remove"
     )
-    if (removeButton) {
-        removeButton.click();
+    if (removeButtons.length === 0) {
+        return;
     } else {
-        console.log("No remove button")
+        removeButtons.forEach(async (button) => {
+            button.click();
+            await waitForElementToDisappear('catProcessing')
+        });
     }
-    await new Promise(resolve => setTimeout(resolve, 2000));
     const searchButton = document.querySelector(".appButton.searchDocuments-tabs-criteriaAndButtons-buttonPad2-search.appButtonPrimary.appSearchButton.appSubmitButton.appPrimaryButton.appNotReadOnly.appIndex1");
     if (searchButton) {
         searchButton.click();
         console.log('Filter Search Button Clicked.');
     }
-    await new Promise(resolve => setTimeout(resolve, 4000));
-
+    await waitForElementToDisappear('catProcessing') // switched from waiting for 4 seconds
 }
 
 async function selectValues(values, select) {
@@ -343,13 +390,12 @@ async function selectValues(values, select) {
     let event = new Event('change');
     select.dispatchEvent(event);
     console.log('Dispatched change event');
-    await new Promise(resolve => setTimeout(resolve, 2000));
+    await new Promise(resolve => setTimeout(resolve, 1000)) // change event happens in background. Have to use manual timeout. 
     const searchButton = document.querySelector(".appButton.searchDocuments-tabs-criteriaAndButtons-buttonPad2-search.appButtonPrimary.appSearchButton.appSubmitButton.appPrimaryButton.appNotReadOnly.appIndex1");
     if (searchButton) {
         searchButton.click();
-        console.log('Search Button Clicked.');
+        await waitForElementToDisappear('catProcessing');
     }
-    await new Promise(resolve => setTimeout(resolve, 2000));
 }
 
 function waitForElementToDisappear(elementId) {
@@ -380,12 +426,9 @@ async function checkRightPage(companyName, elementId) {
     return new Promise((resolve, reject) => {
         let element = document.querySelector(elementId)
         let name = element ? element.textContent.toLowerCase() : "Not Found"
-        console.log(`Comparing: CoName ${companyName.toLowerCase()}, vs Name: ${name}`)
         if (name.includes(companyName.toLowerCase())) {
-            console.log("right name")
             resolve();
         } else {
-            console.log('wrong name')
             chrome.runtime.sendMessage({action: 'need_restart'});
             reject();
         }
