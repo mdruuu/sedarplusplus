@@ -5,6 +5,7 @@ console.log = function (message) {
     chrome.runtime.sendMessage({action: "log", message: message});
 };
 
+let isRunning = true;
 
 // let selectValueMap = {
 //     "Financials": ['ANNUAL_FINANCIAL_STATEMENTS', 'INTERIM_FINANCIAL_STATEMENTSREPORT'],
@@ -23,8 +24,13 @@ let cutoffYear
 let page
 let title
 
+
+
 chrome.runtime.onMessage.addListener(async (request, sender, sendResponse) => {
     // console.log(`Message received: ${JSON.stringify(request)}`);    
+    if (request.action === 'stop_running') {
+        isRunning = false;
+    }
     if (request.action === 'preload') {
         const title = document.title
         const issuerProfileElement = document.querySelector('.appPageTitleText');
@@ -51,11 +57,9 @@ chrome.runtime.onMessage.addListener(async (request, sender, sendResponse) => {
                 await findCompany(companyName);
                 break;
             case 'View Issuer Profile':
-                console.log('View Issuer Profile Triggered')
                 await clickDocLink(companyName);
                 break;
             case 'Search':
-                console.log('Search Triggered')
                 await searchPageProcess(companyName, fileTypeFilters, modeType, cutoffYear);
                 break; 
             default:
@@ -70,7 +74,6 @@ chrome.runtime.onMessage.addListener(async (request, sender, sendResponse) => {
 
 
 async function findCompany(companyName) {
-    console.log('TEST running findCompany')
     const companyField = document.querySelector("#QueryString");
     console.log(`Searching for: ${companyName}`)
     companyField.value = companyName;
@@ -111,7 +114,6 @@ async function findCompany(companyName) {
 }
 
 async function clickDocLink(companyName) {
-    console.log('TEST running clickDocLink');
     let profilePageElement = '.appPageTitleText'
     try {
         await checkRightPage(companyName, profilePageElement)
@@ -127,7 +129,6 @@ async function clickDocLink(companyName) {
 }
 
 async function searchPageProcess(companyName, fileTypeFilters, modeType, cutoffYear) {
-    console.log('TEST running searchPageProcess');
     let searchPageElement = '.searchDocuments-tabs-criteriaAndButtons-criteria-criteriaBox-row1-multiDocSearch-multiPartyRepeaterWrapper-partynameFilterRepeater-filterDomain-entityNameNumberLookupBox-partyNameHeader'
     try {
         await checkRightPage(companyName, searchPageElement)

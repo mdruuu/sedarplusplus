@@ -77,6 +77,8 @@ function addEnterListener(elementId) {
 }
 addEnterListener('companyName');
 addEnterListener('cutoffYear');
+addEnterListener('filingType');
+addEnterListener('modeType');
 
 document.getElementById('clearBtn').addEventListener('click', reset);
 function reset() {
@@ -98,6 +100,7 @@ document.getElementById('reloadBtn').addEventListener('click', () => {
 
 document.getElementById('stopBtn').addEventListener('click', () => {
   chrome.runtime.sendMessage( { action: "stop_running" })
+  chrome.storage.local.set({ searchRequested: false })
 })
 
 document.addEventListener('click', function(e) {
