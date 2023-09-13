@@ -57,9 +57,12 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 
 document.getElementById('searchBtn').addEventListener('click', performSearch);
 function addEnterListener(elementId) {
-  document.getElementById(elementId).addEventListener('keypress', function (e) {
+  document.getElementById(elementId).addEventListener('keydown', function (e) {
       if (e.key === 'Enter') {
           performSearch();
+      }
+      if (e.ctrlKey && e.shiftKey && e.key === "Backspace") {
+        reset();
       }
   });
 }
@@ -107,7 +110,8 @@ function performSearch() {
   chrome.storage.local.clear();
   chrome.tabs.query({ active: true, currentWindow: true }, function(tabs) {
     if (tabs[0].url.includes('sedarplus')) {
-      chrome.tabs.sendMessage(tabs[0].id, {action: 'preload'});
+      saveVariables(tabs[0].title);
+      chrome.tabs.sendMessage(tabs[0].id, {action: 'search', page: tabs[0].title});
     } else {
       navigateToSedarPlus(tabs[0].id)
     }
@@ -128,16 +132,23 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       let companyName = companyNameElement.value.toLowerCase();
 
       if (title === 'Reporting issuers list') {
-        sendMessage(tabId, 'Reporting issuers list');
+        saveVariables(tabId, 'Reporting issuers list');
       } else if (title === "View Issuer Profile" && lowerCaseIssuerProfileName.includes(companyName)) {
-        sendMessage(tabId, 'View Issuer Profile');
+        saveVariables(tabId, 'View Issuer Profile');
       } else if (title === 'Search' && lowerCaseSearchPageName.includes(companyName)) {
-        sendMessage(tabId, 'Search');
+        saveVariables(tabId, 'Search');
       } else {
         navigateToSedarPlus(tabId);
       }
     });
   }
+
+  if (request.action === 'need_restart') {
+    chrome.tabs.query({ active: true, currentWindow: true }, function(tabs) {
+      navigateToSedarPlus(tabs[0].id)
+    })
+  }
+
 });
 
 
@@ -148,14 +159,14 @@ function navigateToSedarPlus(tabId) {
   console.log('Navigating to Sedar+.');
   chrome.tabs.update(tabId, { url: targetUrl }, async function(tab) {
     await new Promise(resolve => setTimeout(resolve, 1000))
-    sendMessage(tabId, 'Reporting issuers list');
+    saveVariables(tabId, 'Reporting issuers list');
     await new Promise(resolve => setTimeout(resolve, 3500));
     chrome.tabs.query({active: true, currentWindow: true}, function(tabs) {
       if (tabs[0].url === landingUrl) {
         console.log("Sedar+ Rerouted us. Reloading.");
         chrome.tabs.update(tabId, { url: targetUrl }, async function(tab) {
           await new Promise(resolve => setTimeout(resolve, 1000))
-          sendMessage(tabId, 'Reporting issuers list');
+          saveVariables(tabId, 'Reporting issuers list');
         });
       }
     });
@@ -163,7 +174,7 @@ function navigateToSedarPlus(tabId) {
 }
     
 
-function sendMessage(tabId, pageMessage) {
+function saveVariables(tabId, pageMessage) {
   const fileTypeFilters = Array.from(filingTypeElement.selectedOptions).map(option => option.value);
 
   chrome.storage.local.set({ searchRequested: true, companyName: companyNameElement.value, fileTypeFilters: fileTypeFilters, modeType: modeTypeElement.value, cutoffYear: cutoffYearElement.value}, function() {

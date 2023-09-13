@@ -52,11 +52,11 @@ chrome.runtime.onMessage.addListener(async (request, sender, sendResponse) => {
                 break;
             case 'View Issuer Profile':
                 console.log('View Issuer Profile Triggered')
-                await clickDocLink();
+                await clickDocLink(companyName);
                 break;
             case 'Search':
                 console.log('Search Triggered')
-                await searchPageProcess(fileTypeFilters, modeType, cutoffYear);
+                await searchPageProcess(companyName, fileTypeFilters, modeType, cutoffYear);
                 break; 
             default:
                 console.log('Unknown page');
@@ -107,31 +107,38 @@ async function findCompany(companyName) {
             console.log("Company not found in the results. Try again")
         }
     }
-    console.log("TEST FINDCOMPANY COMPLETED")
-    // let selector = '.viewSecuritiesIssuer-tabsBox-party-profileInfoBox-searchProfileDocumentsTab-documentsSearch'
+
 }
 
-
-async function clickDocLink() {
+async function clickDocLink(companyName) {
     console.log('TEST running clickDocLink');
+    let profilePageElement = '.appPageTitleText'
+    try {
+        await checkRightPage(companyName, profilePageElement)
+    } catch {
+        return;
+    }
     const docLinks = document.querySelectorAll(".viewSecuritiesIssuer-tabsBox-party-profileInfoBox-searchProfileDocumentsTab-documentsSearch.appMenu.appMenuItem.appMenuDepth0.noSave.noUrlStackPush.appReadOnly.appIndex0");
     const targetDocLink = Array.from(docLinks).find(el => el.textContent.includes('Search and download documents for this profile'));
     if (targetDocLink) {
     targetDocLink.click();
     console.log('Clicking Doc Link')
     }
-
-    // let selector = '.searchDocuments-tabs-criteriaAndButtons-criteria-criteriaBox'
 }
 
-async function searchPageProcess(fileTypeFilters, modeType, cutoffYear) {
+async function searchPageProcess(companyName, fileTypeFilters, modeType, cutoffYear) {
     console.log('TEST running searchPageProcess');
-    let clickCount = 0;
-    const xpath = "//a[.//span[contains(text(), 'Submitted date')]]";
-    const matchingElement = document.evaluate(xpath, document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null).singleNodeValue;
+    let searchPageElement = '.searchDocuments-tabs-criteriaAndButtons-criteria-criteriaBox-row1-multiDocSearch-multiPartyRepeaterWrapper-partynameFilterRepeater-filterDomain-entityNameNumberLookupBox-partyNameHeader'
+    try {
+        await checkRightPage(companyName, searchPageElement)
+    } catch {
+        return;
+    }
     for (i = 0; i < 2; i++) {
+        let  xpath = "//a[.//span[contains(text(), 'Submitted date')]]";
+        let matchingElement = document.evaluate(xpath, document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null).singleNodeValue;
         let oldDate = document.querySelector('.appAttrDateTime .appAttrValue span[aria-hidden="true"]').textContent;
-        console.log(`Sorting List. Need 2 Clicks. CLicking...${i}`)
+        console.log(`Sorting List. Need 2 Clicks. CLicking...${i + 1}`)
         matchingElement.click();
         await new Promise(resolve => {
             const intervalId = setInterval(() => {
@@ -144,10 +151,10 @@ async function searchPageProcess(fileTypeFilters, modeType, cutoffYear) {
         })
     }
     let select = document.getElementById('FilingType');
-    if (!result.fileTypeFilters.includes("All")) {
+    if (!fileTypeFilters.includes("All")) {
         await selectValues(fileTypeFilters, select);
     };
-    if (result.modetype !== "Regular") {
+    if (modeType !== "Regular") {
         await processFileTypes(modeType, fileTypeFilters, cutoffYear);
     }
 }
@@ -239,21 +246,6 @@ async function downloadDocSimple(cutoffYear) {
     return clickNextPage
 }
 
-async function downloadLinksOriginal(companyName) {
-    let linkName = linkElement.querySelector('span').textContent;
-    linkName = linkName.replace('.pdf', '');        
-    let row = linkElement.closest('.appTblRow');
-    let dateElement = row.querySelector('.appAttrDateTime .appAttrValue span[aria-hidden="true"]').textContent;
-    dateElement = dateElement.substring(0, 9);
-    let downloadInfo = {
-        url: linkElement.href,
-        filename: `sedarplusplus/${companyName}/${companyName}_${linkName}_${dateElement}.pdf`,
-        conflictAction: 'uniquify',
-    };
-    // Send a message to the background script to perform the download
-    chrome.runtime.sendMessage({action: "download", downloadInfo: downloadInfo});
-} //! This is the original function that downloaded the file into a specific folder and renamed it. However, you can only do it on one page before it starts rerouting your traffic to a bot checker, and it becomes impossible to run this code again. USE RESULT.COMPANYNAME to pass companyname, not REQUEST.
-
 
 async function processMultiPages(mode, cutoffYear) {
     let dateId = '.appAttrDateTime .appAttrValue span[aria-hidden="true"]'
@@ -270,7 +262,6 @@ async function processMultiPages(mode, cutoffYear) {
     let allData = [];
 
     for (let page = 1; page <= maxPage; page++) {
-        console.log("Running For Loop")
         let result = (mode === 'DownloadAll') ? await downloadDocSimple(cutoffYear) : await grabLinks(page, cutoffYear);
         let data = result.data;
         if (mode === 'LinkAll') allData.push(...data);
@@ -288,12 +279,11 @@ async function processMultiPages(mode, cutoffYear) {
                         clearInterval(intervalId);
                         resolve();
                     }
-                }, 100); // Check every 100ms
+                }, 100);
             });
             oldDate = newDate;
         }   
     }
-    console.log("Exited For Loop")
     return allData 
 }
 
@@ -386,14 +376,42 @@ function waitForElementToDisappear(elementId) {
 }
 
 
-function waitForElementToAppear(selector) {
-    return new Promise(resolve => {
-        const waitForAppearInvervalId = setInterval(() => {
-            const element = document.querySelector(selector);
-            if (element) {
-                clearInterval(waitForAppearInvervalId);
-                resolve();
-            }
-        }, 100)
+async function checkRightPage(companyName, elementId) {
+    return new Promise((resolve, reject) => {
+        let element = document.querySelector(elementId)
+        let name = element ? element.textContent.toLowerCase() : "Not Found"
+        console.log(`Comparing: CoName ${companyName.toLowerCase()}, vs Name: ${name}`)
+        if (name.includes(companyName.toLowerCase())) {
+            console.log("right name")
+            resolve();
+        } else {
+            console.log('wrong name')
+            chrome.runtime.sendMessage({action: 'need_restart'});
+            reject();
+        }
     })
 }
+
+
+
+
+
+
+
+
+
+
+// async function downloadLinksOriginal(companyName) {
+//     let linkName = linkElement.querySelector('span').textContent;
+//     linkName = linkName.replace('.pdf', '');        
+//     let row = linkElement.closest('.appTblRow');
+//     let dateElement = row.querySelector('.appAttrDateTime .appAttrValue span[aria-hidden="true"]').textContent;
+//     dateElement = dateElement.substring(0, 9);
+//     let downloadInfo = {
+//         url: linkElement.href,
+//         filename: `sedarplusplus/${companyName}/${companyName}_${linkName}_${dateElement}.pdf`,
+//         conflictAction: 'uniquify',
+//     };
+//     // Send a message to the background script to perform the download
+//     chrome.runtime.sendMessage({action: "download", downloadInfo: downloadInfo});
+// } //! This is the original function that downloaded the file into a specific folder and renamed it. However, you can only do it on one page before it starts rerouting your traffic to a bot checker, and it becomes impossible to run this code again. USE RESULT.COMPANYNAME to pass companyname, not REQUEST.
