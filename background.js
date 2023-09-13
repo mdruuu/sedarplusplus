@@ -6,19 +6,19 @@ console.log = function (message) {
 
 
 chrome.tabs.onUpdated.addListener(async (tabId, changeInfo, tab) => {
-    await new Promise(resolve => setTimeout(resolve, 2000))
+    await new Promise(resolve => setTimeout(resolve, 1000))
     if (changeInfo.status === 'complete' && tab.active && tab.url.includes('sedarplus')) {
-        let result = await chrome.storage.local.get(['searchRequested', 'orderNumber'])
-        let orderNumber = result.orderNumber
-        console.log(orderNumber)
-        if (result.searchRequested && orderNumber === 1) {
-            console.log ("Skipping as it conflicts with popup.js message")
-        } else if  (result.searchRequested && orderNumber !== 1) {
-            chrome.tabs.sendMessage(tabId, { action: 'search', page: tab.title, sender: 'bg.js' })
-            orderNumber += 1
+        console.log('onUpdated Triggered')
+        let result = await chrome.storage.local.get(['searchRequested'])
+         if  (result.searchRequested) {
+            chrome.tabs.sendMessage(tabId, { action: 'search', page: tab.title })
         } 
     }
 });
+
+
+
+
 
 // chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 //     if (request.action === 'check_page') {

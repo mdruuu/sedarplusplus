@@ -154,7 +154,7 @@ function navigateToSedarPlus(tabId) {
       if (tabs[0].url === landingUrl) {
         console.log("Sedar+ Rerouted us. Reloading.");
         chrome.tabs.update(tabId, { url: targetUrl }, async function(tab) {
-          await new Promise(resolve => setTimeout(resolve, 2000))
+          await new Promise(resolve => setTimeout(resolve, 1000))
           sendMessage(tabId, 'Reporting issuers list');
         });
       }
@@ -166,9 +166,10 @@ function navigateToSedarPlus(tabId) {
 function sendMessage(tabId, pageMessage) {
   const fileTypeFilters = Array.from(filingTypeElement.selectedOptions).map(option => option.value);
 
-  chrome.storage.local.set({ searchRequested: true, companyName: companyNameElement.value, fileTypeFilters: fileTypeFilters, modeType: modeTypeElement.value, cutoffYear: cutoffYearElement.value }, function() {
-    chrome.tabs.sendMessage(tabId, { action: 'search', companyName: companyNameElement, page: pageMessage, sender: 'popup.js', orderNumber: 1});
-    console.log('Message Sent')
+  chrome.storage.local.set({ searchRequested: true, companyName: companyNameElement.value, fileTypeFilters: fileTypeFilters, modeType: modeTypeElement.value, cutoffYear: cutoffYearElement.value}, function() {
+    console.log('variables saved')
+    // chrome.tabs.sendMessage(tabId, { action: 'search', companyName: companyNameElement, page: pageMessage, sender: 'popup.js'});
+    // console.log('Message Sent')
     // chrome.runtime.sendMessage({ action: 'reset_count' });
   }); 
 }

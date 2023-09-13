@@ -35,6 +35,7 @@ chrome.runtime.onMessage.addListener(async (request, sender, sendResponse) => {
         chrome.runtime.sendMessage({action: 'queryTab', title: title, issuerProfileName: issuerProfileName, searchPageName: searchPageName})
     } else if (request.action === 'search') {
         page = request.page
+        console.log(page)
         await new Promise(resolve => {
             chrome.storage.local.get(['searchRequested', 'companyName', 'fileTypeFilters', 'modeType', 'cutoffYear'], function(result) {
                 searchRequested = result.searchRequested
@@ -48,12 +49,18 @@ chrome.runtime.onMessage.addListener(async (request, sender, sendResponse) => {
         switch(page) {
             case 'Reporting issuers list':
                 await findCompany(companyName);
+                break;
             case 'View Issuer Profile':
+                console.log('View Issuer Profile Triggered')
                 await clickDocLink();
+                break;
             case 'Search':
-                await searchPageProcess(fileTypeFilters, modeType, cutoffYear); 
+                console.log('Search Triggered')
+                await searchPageProcess(fileTypeFilters, modeType, cutoffYear);
+                break; 
             default:
                 console.log('Unknown page');
+                break;
         }
     } else if (request.action === 'grab_document') {
         grabDocument(request.date, request.text);
@@ -70,7 +77,7 @@ async function findCompany(companyName) {
     await new Promise(resolve => setTimeout(resolve, 500)) // Processing doesn't show up when searching for company profile - I think. Have to use manual delay.
     const searchButton = document.querySelector(".searchButton.appIconSearch.keepInteractiveOnSubmit");
     searchButton.click();
-    await new Promise(resolve => setTimeout(resolve, 500)) // Processing doesn't show up when searching for company profile - I think. Have to use manual delay.
+    await new Promise(resolve => setTimeout(resolve, 1000)) // Processing doesn't show up when searching for company profile - I think. Have to use manual delay.
     const links = document.querySelectorAll(".searchReportingIssuers-results-page-entitiesRecord-entityNameBox-viewEntity.appMenu.appMenuItem.appMenuDepth0.viewInstanceUpdateStackPush.appReadOnly.appIndex0");
     if (links.length === 0) {
         console.log('No results round. Check name and try again.');
@@ -100,7 +107,7 @@ async function findCompany(companyName) {
             console.log("Company not found in the results. Try again")
         }
     }
-
+    console.log("TEST FINDCOMPANY COMPLETED")
     // let selector = '.viewSecuritiesIssuer-tabsBox-party-profileInfoBox-searchProfileDocumentsTab-documentsSearch'
 }
 
