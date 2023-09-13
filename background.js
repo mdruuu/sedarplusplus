@@ -1,8 +1,22 @@
+let oldLog = console.log;
+console.log = function (message) {
+    oldLog.apply(console, arguments);
+    chrome.runtime.sendMessage({action: "log", message: message});
+};
 
-chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
+
+chrome.tabs.onUpdated.addListener(async (tabId, changeInfo, tab) => {
+    await new Promise(resolve => setTimeout(resolve, 2000))
     if (changeInfo.status === 'complete' && tab.active && tab.url.includes('sedarplus')) {
-        chrome.tabs.sendMessage(tabId, { action: 'page_loaded' })
-        console.log("page loaded message sent")
+        let result = await chrome.storage.local.get(['searchRequested', 'orderNumber'])
+        let orderNumber = result.orderNumber
+        console.log(orderNumber)
+        if (result.searchRequested && orderNumber === 1) {
+            console.log ("Skipping as it conflicts with popup.js message")
+        } else if  (result.searchRequested && orderNumber !== 1) {
+            chrome.tabs.sendMessage(tabId, { action: 'search', page: tab.title, sender: 'bg.js' })
+            orderNumber += 1
+        } 
     }
 });
 

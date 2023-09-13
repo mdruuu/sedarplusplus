@@ -127,13 +127,12 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       
       let companyName = companyNameElement.value.toLowerCase();
 
-
       if (title === 'Reporting issuers list') {
-        sendMessage(tabId, 'issuerSearchPage');
-      } else if (title === "View Isser Profile" && lowerCaseIssuerProfileName.includes(companyName)) {
-        sendMessage(tabId, 'profilePage');
+        sendMessage(tabId, 'Reporting issuers list');
+      } else if (title === "View Issuer Profile" && lowerCaseIssuerProfileName.includes(companyName)) {
+        sendMessage(tabId, 'View Issuer Profile');
       } else if (title === 'Search' && lowerCaseSearchPageName.includes(companyName)) {
-        sendMessage(tabId, 'docSearchPage');
+        sendMessage(tabId, 'Search');
       } else {
         navigateToSedarPlus(tabId);
       }
@@ -148,13 +147,15 @@ function navigateToSedarPlus(tabId) {
 
   console.log('Navigating to Sedar+.');
   chrome.tabs.update(tabId, { url: targetUrl }, async function(tab) {
-    sendMessage(tabId, 'issuerSearchPage');
+    await new Promise(resolve => setTimeout(resolve, 1000))
+    sendMessage(tabId, 'Reporting issuers list');
     await new Promise(resolve => setTimeout(resolve, 3500));
     chrome.tabs.query({active: true, currentWindow: true}, function(tabs) {
       if (tabs[0].url === landingUrl) {
         console.log("Sedar+ Rerouted us. Reloading.");
-        chrome.tabs.update(tabId, { url: targetUrl }, function(tab) {
-          sendMessage(tabId, 'issuerSearchPage');
+        chrome.tabs.update(tabId, { url: targetUrl }, async function(tab) {
+          await new Promise(resolve => setTimeout(resolve, 2000))
+          sendMessage(tabId, 'Reporting issuers list');
         });
       }
     });
@@ -166,8 +167,9 @@ function sendMessage(tabId, pageMessage) {
   const fileTypeFilters = Array.from(filingTypeElement.selectedOptions).map(option => option.value);
 
   chrome.storage.local.set({ searchRequested: true, companyName: companyNameElement.value, fileTypeFilters: fileTypeFilters, modeType: modeTypeElement.value, cutoffYear: cutoffYearElement.value }, function() {
-    chrome.tabs.sendMessage(tabId, { action: 'search', companyName: companyNameElement, page: pageMessage});
-    chrome.runtime.sendMessage({ action: 'reset_count' });
+    chrome.tabs.sendMessage(tabId, { action: 'search', companyName: companyNameElement, page: pageMessage, sender: 'popup.js', orderNumber: 1});
+    console.log('Message Sent')
+    // chrome.runtime.sendMessage({ action: 'reset_count' });
   }); 
 }
 

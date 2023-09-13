@@ -24,10 +24,7 @@ let page
 let title
 
 chrome.runtime.onMessage.addListener(async (request, sender, sendResponse) => {
-    if (request.action === 'page_loaded') {
-        title = document.title
-        console.log(title)
-    }
+    console.log(`Message received: ${JSON.stringify(request)}`);    
     if (request.action === 'preload') {
         const title = document.title
         const issuerProfileElement = document.querySelector('.appPageTitleText');
@@ -49,18 +46,12 @@ chrome.runtime.onMessage.addListener(async (request, sender, sendResponse) => {
             })
         })
         switch(page) {
-            case 'issuerSearchPage':
+            case 'Reporting issuers list':
                 await findCompany(companyName);
+            case 'View Issuer Profile':
                 await clickDocLink();
+            case 'Search':
                 await searchPageProcess(fileTypeFilters, modeType, cutoffYear); 
-                break;
-            case 'profilePage':
-                await clickDocLink();
-                await searchPageProcess(fileTypeFilters, modeType, cutoffYear); 
-                break;
-            case 'docSearchPage':
-                await searchPageProcess(fileTypeFilters, modeType, cutoffYear); 
-                break;
             default:
                 console.log('Unknown page');
         }
@@ -72,9 +63,11 @@ chrome.runtime.onMessage.addListener(async (request, sender, sendResponse) => {
 
 
 async function findCompany(companyName) {
+    console.log('TEST running findCompany')
     const companyField = document.querySelector("#QueryString");
     console.log(`Searching for: ${companyName}`)
     companyField.value = companyName;
+    await new Promise(resolve => setTimeout(resolve, 500)) // Processing doesn't show up when searching for company profile - I think. Have to use manual delay.
     const searchButton = document.querySelector(".searchButton.appIconSearch.keepInteractiveOnSubmit");
     searchButton.click();
     await new Promise(resolve => setTimeout(resolve, 500)) // Processing doesn't show up when searching for company profile - I think. Have to use manual delay.
@@ -109,23 +102,11 @@ async function findCompany(companyName) {
     }
 
     // let selector = '.viewSecuritiesIssuer-tabsBox-party-profileInfoBox-searchProfileDocumentsTab-documentsSearch'
-    
-    await new Promise((resolve) => {
-        let intervalId = setInterval(function() {
-            console.log("waiting")
-            console.log(title)
-            if (title === 'View Issuer Profile') {
-                clearInterval(intervalId);
-                console.log("page_loaded")
-                resolve()
-            }
-        }, 100)
-    })
 }
 
 
 async function clickDocLink() {
-    console.log('Company Page Loaded');
+    console.log('TEST running clickDocLink');
     const docLinks = document.querySelectorAll(".viewSecuritiesIssuer-tabsBox-party-profileInfoBox-searchProfileDocumentsTab-documentsSearch.appMenu.appMenuItem.appMenuDepth0.noSave.noUrlStackPush.appReadOnly.appIndex0");
     const targetDocLink = Array.from(docLinks).find(el => el.textContent.includes('Search and download documents for this profile'));
     if (targetDocLink) {
@@ -134,18 +115,10 @@ async function clickDocLink() {
     }
 
     // let selector = '.searchDocuments-tabs-criteriaAndButtons-criteria-criteriaBox'
-    await new Promise((resolve) => {
-        chrome.runtime.sendMessage({ action: 'check_page' }, (response) => {
-            if (response === 'Search') {
-                resolve()
-            }
-        })
-    })
-
 }
 
 async function searchPageProcess(fileTypeFilters, modeType, cutoffYear) {
-    console.log('Company Documents Page Loaded');
+    console.log('TEST running searchPageProcess');
     let clickCount = 0;
     const xpath = "//a[.//span[contains(text(), 'Submitted date')]]";
     const matchingElement = document.evaluate(xpath, document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null).singleNodeValue;
@@ -232,6 +205,7 @@ async function processFileTypes(modeType, fileType, cutoffYear) {
         chrome.runtime.sendMessage({action: 'update_statusPane', data: JSON.stringify(combinedAllData)});
     }
     console.log("Finished processing.")
+    chrome.storage.local.set({ searchRequested: false })
 }
 
 async function downloadDocSimple(cutoffYear) {
