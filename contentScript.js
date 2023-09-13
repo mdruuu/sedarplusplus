@@ -131,11 +131,10 @@ async function searchPageProcess(companyName, fileTypeFilters, modeType, cutoffY
     let searchPageElement = '.searchDocuments-tabs-criteriaAndButtons-criteria-criteriaBox-row1-multiDocSearch-multiPartyRepeaterWrapper-partynameFilterRepeater-filterDomain-entityNameNumberLookupBox-partyNameHeader'
     try {
         await checkRightPage(companyName, searchPageElement)
-        await removeOption();
+        await removeOption(false);
     } catch {
         return;
     }
-
 
     await new Promise(resolve => setTimeout(resolve, 500)) // Need to slow down between 2nd click and calling additional functions.
     
@@ -213,10 +212,9 @@ async function clickSort(n) {
 }
 
 
-
 async function grabDocument(date, text) {
     chrome.runtime.sendMessage({ action: 'statusPane_tempChange'})
-    await removeOption();
+    await removeOption(false);
     let startDate = document.querySelector('#DocumentDate')
     let endDate = document.querySelector('#DocumentDate2')
     let searchButton = document.querySelector(".appButton.searchDocuments-tabs-criteriaAndButtons-buttonPad2-search.appButtonPrimary.appSearchButton.appSubmitButton.appPrimaryButton.appNotReadOnly.appIndex1");
@@ -260,7 +258,7 @@ async function processFileTypes(modeType, fileType, cutoffYear) {
         }
         if (i < fileType.length - 1) {
             console.log("Running removeOption")
-            await removeOption();
+            await removeOption(true);
         }
     }
     if (modeType === 'Link' || modeType === 'LinkAll') {
@@ -359,17 +357,20 @@ async function grabLinks(page, cutoffYear) {
     return {data: data, clickNextPage: clickNextPage};
 }
 
-async function removeOption() {
+async function removeOption(singleMode) {
     let removeButtons = document.querySelectorAll(
         ".select2-selection__choice__remove"
     )
+    
     if (removeButtons.length === 0) {
         return;
     } else {
-        removeButtons.forEach(async (button) => {
-            button.click();
+        let n = singleMode ? 1 : removeButtons.length;
+        for (i = 0; i < n; i++ ) {
+            let button = removeButtons[i]
+            button.click()
             await waitForElementToDisappear('catProcessing')
-        });
+        }
     }
     const searchButton = document.querySelector(".appButton.searchDocuments-tabs-criteriaAndButtons-buttonPad2-search.appButtonPrimary.appSearchButton.appSubmitButton.appPrimaryButton.appNotReadOnly.appIndex1");
     if (searchButton) {
