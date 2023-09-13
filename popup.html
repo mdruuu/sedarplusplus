@@ -66,6 +66,13 @@
       .indent {
         padding-left: 2em;
       }
+      .mode-button {
+        margin: 5px;
+      }
+      .mode-button.selected {
+        background-color: #007BFF;
+        color: white;
+      }
     </style>
     <!-- <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css"> -->
     <!-- <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script> -->
@@ -76,13 +83,11 @@
   <body>
     <div class="input-row">
       <label for="modeType">Mode</label>
-      <select id="modeType">
-        <option value="Regular">Company Doc Page</option>
-        <!-- <option value="Link">Link Grabber</option> -->
-        <option value="LinkAll">Link Grabber</option>
-        <!-- <option value="Download">Doc Downloader</option> -->
-        <option value="DownloadAll">Doc Download BETA</option>
-      </select>
+      <div id="modeType">
+        <button class="mode-button selected" value="Regular">Company Doc Page</button>
+        <button class="mode-button" value="LinkAll">Link Grabber</button>
+        <button class="mode-button" value="DownloadAll">Doc Download BETA</button>
+      </div>
     </div>
     <div class="input-grid">
       <div class="input-row">
@@ -123,7 +128,7 @@
         </div>
       </span>
     </div>
-    <!-- <button id="reloadBtn">RELOAD</button>  -->
+    <button id="reloadBtn">RELOAD</button> 
     <script src="popup.js"></script>
   </body>
 </html>

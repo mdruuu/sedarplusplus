@@ -1,9 +1,10 @@
 let defaultStatusPaneText
-let modeTypeElement = document.getElementById('modeType');
+let modeTypeElement = document.getElementById('mode-button.selected');
 let filingTypeElement = document.getElementById('filingType')
 let companyNameElement = document.getElementById('companyName')
 let statusPaneElement = document.getElementById('statusPane')
 let cutoffYearElement = document.getElementById('cutoffYear')
+
 
 window.onload = function() {
   defaultStatusPaneText = document.getElementById('statusPane').innerHTML;
@@ -18,9 +19,22 @@ window.onload = function() {
         option.selected = fileTypeFilters.includes(option.value);
       });
     }
-    modeTypeElement.selectedIndex = result.modeType ? Array.from(modeTypeElement.options).findIndex(option => option.value === result.modeType) : 0;
     cutoffYearElement.value = result.cutoffYear || '';
     statusPaneElement.innerHTML = result.statusPane || defaultStatusPaneText
+
+    let modeButtons = document.querySelectorAll('.mode-button');
+    let savedModeType = result.modeType || 'Regular';
+    modeButtons.forEach(button => {
+      button.addEventListener('click', function() {
+        modeButtons.forEach(btn => btn.classList.remove('selected'));
+        this.classList.add('selected');
+      });
+      if (button.value === savedModeType) {
+        button.classList.add('selected');
+      } else {
+        button.classList.remove('selected');
+      }
+    });
   })
 
   document.getElementById('companyName').focus();
@@ -85,7 +99,6 @@ function reset() {
   // Reset form inputs to their default values
   companyNameElement.value = '';
   filingTypeElement.selectedIndex = 0;
-  modeTypeElement.selectedIndex = 0;
   cutoffYearElement.value = '';
   statusPaneElement.innerHTML = defaultStatusPaneText;
   
@@ -162,6 +175,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   }
 
 });
+
 
 
 function navigateToSedarPlus(tabId) {
