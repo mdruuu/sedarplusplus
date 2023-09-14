@@ -152,7 +152,7 @@ async function sortClassify() {
     for (let i = 0; i < elements.length; i++) {
         let date = elements[i]
         let datetext = date ? date.textContent : 'NA'
-        let dateParts = datetext.split(' ');
+        let dateParts = datetext.includes('-') ? datetext.split('-') : datetext.split(' ');
         let year = dateParts[2];
         let month = new Date(dateParts[1] + ' 1, 2012').getMonth();
         let day = dateParts[0];

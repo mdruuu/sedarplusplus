@@ -238,7 +238,7 @@ function parseDates(input) {
         break;
     }
   } else {
-    let dates = input.split(' ');
+    let dates = input.includes('-') ? input.split('-') : input.split(' ');
     fromDate = parseDate(dates[0]);
     if (dates.length > 1) {
       toDate = parseDate(dates[1]);
