@@ -20,9 +20,12 @@ let searchRequested
 let companyName
 let fileTypeFilters
 let modeType 
-let cutoffYear
+let fromDate
+let toDate
 let page
 let title
+let fromDateElement = document.querySelector('#DocumentDate')
+let toDateElement = document.querySelector('#DocumentDate2')
 
 
 
@@ -39,12 +42,13 @@ chrome.runtime.onMessage.addListener(async (request, sender, sendResponse) => {
     } else if (request.action === 'search') {
         page = request.page
         await new Promise(resolve => {
-            chrome.storage.local.get(['searchRequested', 'companyName', 'fileTypeFilters', 'modeType', 'cutoffYear'], function(result) {
+            chrome.storage.local.get(['searchRequested', 'companyName', 'fileTypeFilters', 'modeType', 'fromDate', 'toDate'], function(result) {
                 searchRequested = result.searchRequested
                 companyName = result.companyName
                 fileTypeFilters = result.fileTypeFilters
                 modeType = result.modeType
-                cutoffYear = result.cutoffYear
+                fromDate = result.fromDate
+                toDate = result.toDate
                 resolve();
             })
         })
@@ -56,7 +60,7 @@ chrome.runtime.onMessage.addListener(async (request, sender, sendResponse) => {
                 await clickDocLink(companyName);
                 break;
             case 'Search':
-                await searchPageProcess(companyName, fileTypeFilters, modeType, cutoffYear);
+                await searchPageProcess(companyName, fileTypeFilters, modeType, fromDate, toDate);
                 break; 
             default:
                 break;
@@ -123,7 +127,7 @@ async function clickDocLink(companyName) {
     }
 }
 
-async function searchPageProcess(companyName, fileTypeFilters, modeType, cutoffYear) {
+async function searchPageProcess(companyName, fileTypeFilters, modeType, fromDate, toDate) {
     let searchPageElement = '.searchDocuments-tabs-criteriaAndButtons-criteria-criteriaBox-row1-multiDocSearch-multiPartyRepeaterWrapper-partynameFilterRepeater-filterDomain-entityNameNumberLookupBox-partyNameHeader'
     try {
         await checkRightPage(companyName, searchPageElement)
@@ -138,6 +142,12 @@ async function searchPageProcess(companyName, fileTypeFilters, modeType, cutoffY
     if (!fileTypeFilters.includes("All")) {
         await selectValues(fileTypeFilters, select);
     };
+    if (fromDate !== '') {
+        fromDateElement.value = fromDate;
+    }    
+    if (toDate !== '') {
+        toDateElement.value = toDate;
+    }
     let sort = await dateClassify()
     if (sort === 'descending') {
         
@@ -147,7 +157,7 @@ async function searchPageProcess(companyName, fileTypeFilters, modeType, cutoffY
         await clickSort(2);
     } 
     if (modeType !== "Regular") {
-        await processFileTypes(modeType, fileTypeFilters, cutoffYear);
+        await processFileTypes(modeType, fileTypeFilters, fromDate, toDate);
     }
     chrome.storage.local.set({ searchRequested: false })
     console.log("Finished Processing")
@@ -210,8 +220,6 @@ async function clickSort(n) {
 async function grabDocument(date, text) {
     chrome.runtime.sendMessage({ action: 'statusPane_tempChange'})
     await removeOption(false);
-    let startDate = document.querySelector('#DocumentDate')
-    let endDate = document.querySelector('#DocumentDate2')
     let searchButton = document.querySelector(".appButton.searchDocuments-tabs-criteriaAndButtons-buttonPad2-search.appButtonPrimary.appSearchButton.appSubmitButton.appPrimaryButton.appNotReadOnly.appIndex1");
 
     // Convert date from "15 Aug 2022" format to "DD/MM/YYYY" format
@@ -219,8 +227,8 @@ async function grabDocument(date, text) {
     let months = {Jan: '01', Feb: '02', Mar: '03', Apr: '04', May: '05', Jun: '06', Jul: '07', Aug: '08', Sep: '09', Oct: '10', Nov: '11', Dec: '12'};
     date = parts[0] + '/' + months[parts[1]] + '/' + parts[2];
 
-    startDate.value = date;
-    endDate.value = date;
+    fromDateElement.value = date;
+    toDateElement.value = date;
     console.log("Searching for Specific Date")
     searchButton.click();
     await waitForElementToDisappear('catProcessing')
@@ -237,7 +245,7 @@ async function grabDocument(date, text) {
 }
 
 
-async function processFileTypes(modeType, fileType, cutoffYear) {
+async function processFileTypes(modeType, fileType, fromDate, toDate) {
     let combinedAllData = []
     for (let i = 0; i < fileType.length; i++) {
         if (modeType === "Download") {
@@ -248,7 +256,7 @@ async function processFileTypes(modeType, fileType, cutoffYear) {
             combinedAllData.push(...allData);
         }
         else if (modeType === 'DownloadAll' || modeType === 'LinkAll') {
-            let allData = await processMultiPages(modeType, cutoffYear);
+            let allData = await processMultiPages(modeType, fromDate, toDate);
             combinedAllData.push(...allData);
         }
         if (i < fileType.length - 1) {
@@ -260,7 +268,7 @@ async function processFileTypes(modeType, fileType, cutoffYear) {
     }
 }
 
-async function downloadDocSimple(cutoffYear) {
+async function downloadDocSimple(fromDate, toDate) {
     let linkElements = document.querySelectorAll('.appTblCell2 a.appDocumentView.appResourceLink.appDocumentLink');
     let clickNextPage = 'No'
     for (let linkElement of linkElements) {
@@ -270,6 +278,7 @@ async function downloadDocSimple(cutoffYear) {
         let dateElement = row.querySelector('.appAttrDateTime .appAttrValue span[aria-hidden="true"]');
         let date = new Date(dateElement.textContent);
         let rowYear = date.getFullYear();
+        let cutoffYear = fromDate.getFullYear();
         if (rowYear >= cutoffYear) {
             console.log(`Downloading: ${linkName} Date: ${date}`)
             // linkElement.click();
@@ -285,7 +294,7 @@ async function downloadDocSimple(cutoffYear) {
 }
 
 
-async function processMultiPages(mode, cutoffYear) {
+async function processMultiPages(mode, fromDate, toDate) {
     let dateId = '.appAttrDateTime .appAttrValue span[aria-hidden="true"]'
     let rowElement = document.querySelector('.appTblRow.appTblRow0');
     let newDate;
@@ -299,7 +308,7 @@ async function processMultiPages(mode, cutoffYear) {
     let allData = [];
 
     for (let page = 1; page <= maxPage; page++) {
-        let result = (mode === 'DownloadAll') ? await downloadDocSimple(cutoffYear) : await grabLinks(page, cutoffYear);
+        let result = (mode === 'DownloadAll') ? await downloadDocSimple(fromDate, toDate) : await grabLinks(page, fromDate, toDate);
         let data = result.data;
         if (mode === 'LinkAll') allData.push(...data);
         
@@ -324,7 +333,7 @@ async function processMultiPages(mode, cutoffYear) {
     return allData 
 }
 
-async function grabLinks(page, cutoffYear) {
+async function grabLinks(page, fromDate, toDate) {
     let data = [];
     let rows = Array.from(document.querySelectorAll('.appTblRow')); 
     let clickNextPage = 'No'
@@ -333,6 +342,7 @@ async function grabLinks(page, cutoffYear) {
         let dateElement = row.querySelector('.appAttrDateTime .appAttrValue span[aria-hidden="true"]');
         let date = new Date(dateElement.textContent);
         let rowYear = date.getFullYear();
+        let cutoffYear = fromDate.getFullYear();
 
         if (rowYear >= cutoffYear) {
             let link = linkElement.href;

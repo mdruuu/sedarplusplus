@@ -15,7 +15,7 @@ let defaultStatusPaneText
 let filingTypeElement = document.getElementById('filingType')
 let companyNameElement = document.getElementById('companyName')
 let statusPaneElement = document.getElementById('statusPane')
-let cutoffYearElement = document.getElementById('cutoffYear')
+let dateElement = document.getElementById('dateString')
 let modeButtonElement = document.getElementById('modeType');
 let modeButtons = document.querySelectorAll('.mode-button');
 let selectedModeButton // needs to be defined at performSearch, but need to be able to acces it in another function.
@@ -50,7 +50,7 @@ window.onload = function() {
         option.selected = fileTypeFilters.includes(option.value);
       });
     }
-    cutoffYearElement.value = result.cutoffYear || '';
+    dateElement.value = result.cutoffYear || '';
     statusPaneElement.innerHTML = result.statusPane || defaultStatusPaneText
     let savedModeType = result.modeType || 'Regular';
     modeButtons.forEach(button => {
@@ -73,8 +73,8 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     // statusPane.innerHTML = '' DISABLING IT FOR TESTING.
     let allData = JSON.parse(request.data)
     allData.sort((a, b) => new Date(b.date) - new Date(a.date));
-    let cutoffYearValue = cutoffYearElement.value;
-    allData = allData.filter(data => new Date(data.date).getFullYear() >= cutoffYearValue);
+    let dateString = dateElement.value;
+    allData = allData.filter(data => new Date(data.date).getFullYear() >= dateString);
     statusPaneElement.innerHTML = `<table><tr><th>Page</th><th>Title</th><th>Date</th></tr>${allData.map(data => `<tr><td>${data.page}</td><td><a href="#" data-date="${data.date}">${data.text}</a></td><td>${data.date}</td></tr>`).join('')}</table>`;
     chrome.storage.local.set({ statusPane: statusPaneElement.innerHTML })
   }
@@ -112,7 +112,7 @@ function reset() {
   // Reset form inputs to their default values
   companyNameElement.value = '';
   filingTypeElement.selectedIndex = 0;
-  cutoffYearElement.value = '';
+  dateElement.value = '';
   statusPaneElement.innerHTML = defaultStatusPaneText;
   modeButtons.forEach(button => {
     if (button.value === 'Regular') {
@@ -153,16 +153,21 @@ document.addEventListener('click', function(e) {
 function performSearch() {
   statusPaneElement.innerHTML = '';
   selectedModeButton = modeButtonElement.querySelector('.mode-button.selected')
-  if (selectedModeButton.value !== "Regular" && !cutoffYearElement.value.trim()) {
+  if (selectedModeButton.value !== "Regular" && !dateElement.value.trim()) {
     console.log("Specify Dates")
     return;
   }
+  let dateString = dateElement.value
+  let parsedDate = parseDates(dateString)
+  let fromDate = parsedDate.fromDate
+  let toDate = parsedDate.toDate
+  
   console.log(`Search Request Received.`);
   chrome.storage.local.clear();
   
   chrome.tabs.query({ active: true, currentWindow: true }, function(tabs) {
     if (tabs[0].url.includes('sedarplus')) {
-      saveVariables(tabs[0].title);
+      saveVariables(tabs[0].title, fromDate, toDate);
       chrome.tabs.sendMessage(tabs[0].id, {action: 'search', page: tabs[0].title});
     } else {
       navigateToSedarPlus(tabs[0].id)
@@ -203,10 +208,10 @@ function navigateToSedarPlus(tabId) {
 }
     
 
-function saveVariables(tabId, pageMessage) {
+function saveVariables(tabId, fromDate, toDate) {
   const fileTypeFilters = Array.from(filingTypeElement.selectedOptions).map(option => option.value);
 
-  chrome.storage.local.set({ searchRequested: true, companyName: companyNameElement.value, fileTypeFilters: fileTypeFilters, modeType: selectedModeButton.value, cutoffYear: cutoffYearElement.value}); 
+  chrome.storage.local.set({ searchRequested: true, companyName: companyNameElement.value, fileTypeFilters: fileTypeFilters, modeType: selectedModeButton.value, fromDate: fromDate, toDate: toDate}); 
 }
 
 
