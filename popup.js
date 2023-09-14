@@ -11,7 +11,7 @@ function logtoPane(message) {
 }
 
 // Defining some global variables to be accessed in multiple places. 
-let defaultStatusPaneText, fromDate, toDate, pFromDate, pToDate, selectedModeButton
+let defaultStatusPaneText, fromDate, toDate, pFromDate, pToDate, selectedModeButton, currentStatPane
 const filingTypeElement = document.getElementById('filingType')
 const companyNameElement = document.getElementById('companyName')
 const statusPaneElement = document.getElementById('statusPane')
@@ -105,12 +105,14 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 
   // On clicking link to download the file, temporarily blanks out the statusPane and logs some interim messages - so people know what's happening. 
   if (request.action === 'statusPane_tempChange') {
-    let currentStatPane = statusPane.innerHTML
+    currentStatPane = statusPane.innerHTML
     statusPane.innerHTML = ''
     console.log("Fetching Doc. Please wait.")
+  }
+  if (request.action === 'statusPane_original') {
     setTimeout(() => {
       statusPane.innerHTML = currentStatPane;
-    }, 3000);    
+    }, 500)
   }
 
   if (request.action === 'need_restart') {
@@ -206,7 +208,6 @@ function navigateToSedarPlus(tabId, fromDate, toDate, pFromDate, pToDate) {
     
 
 function saveVariables(tabId, fromDate, toDate, pFromDate, pToDate) {
-  console.log(`saveVaraibles ${pFromDate}`)
   const fileTypeFilters = Array.from(filingTypeElement.selectedOptions).map(option => option.value);
 
   chrome.storage.local.set({ searchRequested: true, companyName: companyNameElement.value, fileTypeFilters: fileTypeFilters, modeType: selectedModeButton.value, dateString: dateElement.value, fromDate: fromDate, toDate: toDate, pFromDate: pFromDate.toString(), pToDate: pToDate}); 

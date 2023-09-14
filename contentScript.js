@@ -56,7 +56,7 @@ async function findCompany(companyName) {
     await new Promise(resolve => setTimeout(resolve, 500)) // Processing doesn't show up when searching for company profile - I think. Have to use manual delay.
     const searchButton = document.querySelector(".searchButton.appIconSearch.keepInteractiveOnSubmit");
     searchButton.click();
-    await new Promise(resolve => setTimeout(resolve, 1000)) // Processing doesn't show up when searching for company profile - I think. Have to use manual delay.
+    await new Promise(resolve => setTimeout(resolve, 1500)) // Processing doesn't show up when searching for company profile - I think. Have to use manual delay.
     const links = document.querySelectorAll(".searchReportingIssuers-results-page-entitiesRecord-entityNameBox-viewEntity.appMenu.appMenuItem.appMenuDepth0.viewInstanceUpdateStackPush.appReadOnly.appIndex0");
     if (links.length === 0) {
         console.log('No results round. Check name and try again.');
@@ -118,11 +118,15 @@ async function searchPageProcess(companyName, fileTypeFilters, modeType, fromDat
     if (!fileTypeFilters.includes("All")) {
         await selectValues(fileTypeFilters, select);
     };
+    
+    console.log(fromDateElement, toDateElement)
     if (fromDate !== '') {
         fromDateElement.value = fromDate;
+        console.log(`set fromdate value ${fromDate}`)
     }    
     if (toDate !== '') {
         toDateElement.value = toDate;
+        console.log(`set toDate value ${toDate}`)
     }
     const searchButton = document.querySelector(".appButton.searchDocuments-tabs-criteriaAndButtons-buttonPad2-search.appButtonPrimary.appSearchButton.appSubmitButton.appPrimaryButton.appNotReadOnly.appIndex1");
     if (searchButton) {
@@ -209,7 +213,6 @@ async function grabDocument(date, text) {
 
     fromDateElement.value = date;
     toDateElement.value = date;
-    console.log("Searching for Specific Date")
     searchButton.click();
     await waitForElementToDisappear('catProcessing')
     // Look for the element and click on the link where span == text
@@ -217,11 +220,11 @@ async function grabDocument(date, text) {
     for (let link of links) {
         let span = link.querySelector('span');
         if (span && span.textContent === text) {
-            console.log('Found link. Clicking')
             link.click();
             break;
         }
     }
+    chrome.runtime.sendMessage({action: 'statusPane_original'})
 }
 
 async function processFileTypes(modeType, fileType, pFromDate) {
