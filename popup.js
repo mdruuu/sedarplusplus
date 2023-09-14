@@ -1,11 +1,24 @@
+// Printing console logs to statusPane
+let oldLog = console.log;
+console.log = function (message) {
+    oldLog.apply(console, arguments);
+    logtoPane(message);
+};
+
+function logtoPane(message) {
+  statusPaneElement.innerHTML += '<span>' + message + '</span><br>';
+  chrome.storage.local.set({ statusPane: statusPaneElement.innerHTML });
+}
+
+// Defining some global variables to be accessed in multiple places. 
 let defaultStatusPaneText
-let modeButtonElement = document.getElementById('modeType');
-let selectedModeButton // needs to be defined at performSearch, but need to be able to acces it in another function.
 let filingTypeElement = document.getElementById('filingType')
 let companyNameElement = document.getElementById('companyName')
 let statusPaneElement = document.getElementById('statusPane')
 let cutoffYearElement = document.getElementById('cutoffYear')
+let modeButtonElement = document.getElementById('modeType');
 let modeButtons = document.querySelectorAll('.mode-button');
+let selectedModeButton // needs to be defined at performSearch, but need to be able to acces it in another function.
 
 window.onload = function() {
   defaultStatusPaneText = document.getElementById('statusPane').innerHTML;
@@ -51,18 +64,6 @@ window.onload = function() {
   document.getElementById('companyName').focus();
 };
 
-function logtoPane(message) {
-  statusPaneElement.innerHTML += '<span>' + message + '</span><br>';
-  chrome.storage.local.set({ statusPane: statusPaneElement.innerHTML });
-}
-
-
-let oldLog = console.log;
-console.log = function (message) {
-    oldLog.apply(console, arguments);
-    logtoPane(message);
-};
-
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   if (request.action === 'log') {
     logtoPane(request.message)
@@ -76,8 +77,9 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     allData = allData.filter(data => new Date(data.date).getFullYear() >= cutoffYearValue);
     statusPaneElement.innerHTML = `<table><tr><th>Page</th><th>Title</th><th>Date</th></tr>${allData.map(data => `<tr><td>${data.page}</td><td><a href="#" data-date="${data.date}">${data.text}</a></td><td>${data.date}</td></tr>`).join('')}</table>`;
     chrome.storage.local.set({ statusPane: statusPaneElement.innerHTML })
-    }
+  }
 
+  // On clicking link to download the file, temporarily blanks out the statusPane and logs some interim messages - so people know what's happening. 
   if (request.action === 'statusPane_tempChange') {
     let currentStatPane = statusPane.innerHTML
     statusPane.innerHTML = ''
@@ -151,8 +153,13 @@ document.addEventListener('click', function(e) {
 function performSearch() {
   statusPaneElement.innerHTML = '';
   selectedModeButton = modeButtonElement.querySelector('.mode-button.selected')
+  if (selectedModeButton.value !== "Regular" && !cutoffYearElement.value.trim()) {
+    console.log("Specify Dates")
+    return;
+  }
   console.log(`Search Request Received.`);
   chrome.storage.local.clear();
+  
   chrome.tabs.query({ active: true, currentWindow: true }, function(tabs) {
     if (tabs[0].url.includes('sedarplus')) {
       saveVariables(tabs[0].title);
@@ -202,3 +209,58 @@ function saveVariables(tabId, pageMessage) {
   chrome.storage.local.set({ searchRequested: true, companyName: companyNameElement.value, fileTypeFilters: fileTypeFilters, modeType: selectedModeButton.value, cutoffYear: cutoffYearElement.value}); 
 }
 
+
+
+function parseDates(input) {
+  let fromDate, toDate;
+  let today = new Date();
+  if (input.includes('L')) {
+    let value = parseInt(input.substring(1, input.length - 1));
+    toDate = new Date();
+    switch (input[input.length-1]) {
+      case 'D':
+        fromDate = new Date(today.setDate(today.getDate() - value));
+        break;
+      case 'W':
+        fromDate = new Date(today.setDate(today.getDate() - value * 7));
+        break;
+      case 'M':
+        fromDate = new Date(today.setMonth(today.getMonth() - value));
+        break;
+      case 'Q':
+        fromDate = new Date(today.setMonth(today.getMonth() - value * 3));
+        break;
+      case 'Y':
+        fromDate = new Date(today.setFullYear(today.getFullYear() - value))
+        break;
+    }
+  } else {
+    let dates = input.split(' ');
+    fromDate = parseDate(dates[0]);
+    if (dates.length > 1) {
+      toDate = parseDate(dates[1]);
+    }
+  }
+
+  return {
+    fromDate: formatDate(fromDate),
+    toDate: toDate ? formatDate(toDate) : ''
+  };
+}
+
+function parseDate(dateString) {
+  if (dateString.length === 4) {
+    return new Date(dateString, 0, 1);
+  } else if (dateString.length === 6) {
+    return new Date(dateString.substring(0, 4), dateString.substring(4) - 1, 1);
+  } else {
+    return new Date(dateString.substring(0, 4), dateString.substring(4, 6) - 1, dateString.substring(6));
+  }
+}
+
+function formatDate(date) {
+  let day = String(date.getDate()).padStart(2, '0');
+  let month = String(date.getMonth() + 1).padStart(2, '0'); // Months are 0-based
+  let year = date.getFullYear();
+  return `${day}/${month}/${year}`;
+}
