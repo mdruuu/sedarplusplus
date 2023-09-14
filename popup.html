@@ -3,123 +3,7 @@
 <html lang="en">
   <head>
     <title>Sedar++</title>
-    <style>
-      body {
-        width: 400px;
-        margin: 5px;
-        display: flex;
-        flex-direction: column;
-        overflow: auto;
-      }
-      .input-grid {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-      }
-      .input-row {
-        width: 100%;
-      }
-      #filingType {
-        width: 100%;
-        height: 8em;    
-        margin-bottom: 4px;
-        margin-top: 4px;
-     }
-      #filingType:focus {
-        outline: 3px solid lightblue;
-        border: none;
-      }
-      #modeType {
-        width: 100%;
-      }
-      #companyName, #cutoffYear {
-        width: 100%;
-        font-size: 14px;
-        border: none;
-        border-bottom: 1px solid;    
-        margin: 3px;   
-      }
-      #companyName:focus, #cutoffYear:focus{
-        outline: 3px solid lightblue;
-        border: none;
-      }
-      .input-row {
-        display: flex;
-        justify-content: space-between;
-        /* align-items: center; */
-      }
-      .download-boxes {
-        align-items: center;
-      }
-      label {
-        margin-right: 5px;
-      }
-      label[for="filingType"] {
-        position: absolute;
-        width: 1px;
-        height: 1px;
-        padding: 0;
-        margin: -1px;
-        overflow: hidden;
-        clip: rect(0,0,0,0);
-        border: 0;
-      }
-      #statusPane {
-        border: 1px solid black; /* Add a border around the statusPane */
-        padding: 10px; /* Add some padding */
-        margin-top: 3px; /* Add some margin at the top */
-        overflow-y: auto; /* Add auto-scroll */        
-      }
-      #statusPane h2 {
-        text-align: center; /* Center the 'System Message' text */
-      }
-      #clearBtn, #searchBtn {
-        width: 45%;
-        font-size: 13px;
-        border-radius: 10px;
-        padding: 5px;
-        margin: 3px;        
-      }
-      #clearBtn:hover, #searchBtn:hover, #clearBtn:focus, #searchBtn:focus {
-        outline: 3px solid lightblue;
-        border: none;
-      }
-      #clearBtn {
-        background-color: red;
-        color: white;
-      }
-      .indent {
-        padding-left: 2em;
-      }
-      .button-container {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        margin: 2px;
-      }
-      .mode-button {
-        flex: 1;
-        margin: 0;
-        margin-left: 1px;
-        margin-right: 1px;
-        padding: 5px;
-        border: none;
-        background-color: white;
-      }
-      .mode-button:hover, .mode-button.selected {
-        background-color: black;
-        color: white;
-      }
-      .mode-button:focus {
-        outline: none;
-      }
-
-    </style>
-    <!-- <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css"> -->
-    <!-- <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script> -->
-    <!-- <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script> -->
-    <!-- <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-multiselect/0.9.15/css/bootstrap-multiselect.css"> -->
-    <!-- <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-multiselect/0.9.15/js/bootstrap-multiselect.min.js"></script> -->
+    <link rel="stylesheet" type="text/css" href="popup.css">
   </head>
   <body>
     <div class="input-row">
@@ -127,7 +11,7 @@
         <label for="modeType"></label>
         <button class="mode-button selected" value="Regular">DOC PAGE</button>
         <button class="mode-button" value="LinkAll">LINK GRABBER</button>
-        <button class="mode-button" value="DownloadAll">DOWNLOADER*</button>
+        <button class="mode-button" value="DownloadAll">DOWNLOADER</button>
       </div>
     </div>
     <div class="input-grid">
@@ -153,20 +37,21 @@
       </div>
       <div class="input-row">
         <button id="clearBtn">RESET</button>
-        <button id="searchBtn">SEARCH</button>
+        <button id="searchBtn">RUN</button>
       </div>
     </div>
     
     <div id="statusPane">
-      Enter from any field to search. <br> 
-      Ctrl + Shift + Backspace = Reset<br>
-      Hold Ctrl to select multiple Filing Types.<br>
-      There are three modes: <br>
-        <div class="indent">
-              1. Doc Page will Bring you to the company documents page and sort in descending order.<br>
-              2. Linkgrabbe will consolidate links from multiple pages and let you download documents. <b>Specify cutoff year</b><br>
-              3. Downloader: Will let you download all documents. <b>Note that downloading a large number of files will trigger CAPTCHA and your IP will be flagged. Use sparingly, and with VPN.</b>
-        </div>
+      Choose Between Three Modes:
+        <ol>
+              <li>Doc Page: Brings you to the company documents page and sort in descending order.</li>
+              <li>Linkgrabbe: Consolidates links from multiple pages and let you download documents.</li>
+              <li>Downloader: Will auto-download multiple documents. <b>Note that downloading a large number of files will trigger CAPTCHA. Use sparingly. VPN recommended.</b></li>
+        </ol>
+        <p>Enter from any field = Run.<br> 
+          Ctrl + Shift + Backspace = Reset<br>
+          Hold Ctrl to select multiple Filing Types.<br>
+        </p>
       </span>
     </div>
     <!-- <button id="reloadBtn">RELOAD</button>  -->

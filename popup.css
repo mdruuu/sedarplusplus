@@ -1,0 +1,111 @@
+body {
+    width: 400px;
+    margin: 5px;
+    display: flex;
+    flex-direction: column;
+    overflow: auto;
+  }
+  .input-grid {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+  .input-row {
+    width: 100%;
+  }
+  #filingType {
+    width: 100%;
+    height: 8em;    
+    margin-bottom: 4px;
+    margin-top: 4px;
+ }
+  #filingType:focus {
+    outline: 3px solid lightblue;
+    border: none;
+  }
+  #modeType {
+    width: 100%;
+  }
+  #companyName, #cutoffYear {
+    width: 100%;
+    font-size: 14px;
+    border: none;
+    border-bottom: 1px solid;    
+    margin: 3px;   
+  }
+  #companyName:focus, #cutoffYear:focus{
+    outline: 3px solid lightblue;
+    border: none;
+  }
+  .input-row {
+    display: flex;
+    justify-content: space-between;
+    /* align-items: center; */
+  }
+  .download-boxes {
+    align-items: center;
+  }
+  label {
+    margin-right: 5px;
+  }
+  label[for="filingType"] {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0,0,0,0);
+    border: 0;
+  }
+  #statusPane {
+    border: 1px solid black; /* Add a border around the statusPane */
+    padding: 10px; /* Add some padding */
+    margin-top: 3px; /* Add some margin at the top */
+    overflow-y: auto; /* Add auto-scroll */    
+    font-family: Verdana;
+    font-size: 12px;
+  }
+  #statusPane h2 {
+    text-align: center; /* Center the 'System Message' text */
+  }
+  #clearBtn, #searchBtn {
+    width: 45%;
+    font-size: 13px;
+    border-radius: 10px;
+    padding: 5px;
+    margin: 3px;        
+  }
+  #clearBtn:hover, #searchBtn:hover, #clearBtn:focus, #searchBtn:focus {
+    outline: 3px solid lightblue;
+    border: none;
+  }
+  #clearBtn {
+    background-color: red;
+    color: white;
+  }
+  .indent {
+    padding-left: 2em;
+  }
+  .button-container {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin: 2px;
+  }
+  .mode-button {
+    flex: 1;
+    margin: 0;
+    margin-left: 1px;
+    margin-right: 1px;
+    padding: 5px;
+    border: none;
+    background-color: white;
+  }
+  .mode-button:hover, .mode-button.selected {
+    background-color: black;
+    color: white;
+  }
+  .mode-button:focus {
+    outline: none;
+  }

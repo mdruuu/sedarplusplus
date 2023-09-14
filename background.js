@@ -19,6 +19,8 @@ chrome.tabs.onUpdated.addListener(async (tabId, changeInfo, tab) => {
 
 
 
+
+
 // chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 //     if (request.action === 'check_page') {
 //         let title

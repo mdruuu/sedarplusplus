@@ -28,9 +28,6 @@ let title
 
 chrome.runtime.onMessage.addListener(async (request, sender, sendResponse) => {
     // console.log(`Message received: ${JSON.stringify(request)}`);    
-    if (request.action === 'stop_running') {
-        isRunning = false;
-    }
     if (request.action === 'preload') {
         const title = document.title
         const issuerProfileElement = document.querySelector('.appPageTitleText');
@@ -41,7 +38,6 @@ chrome.runtime.onMessage.addListener(async (request, sender, sendResponse) => {
         chrome.runtime.sendMessage({action: 'queryTab', title: title, issuerProfileName: issuerProfileName, searchPageName: searchPageName})
     } else if (request.action === 'search') {
         page = request.page
-        console.log(page)
         await new Promise(resolve => {
             chrome.storage.local.get(['searchRequested', 'companyName', 'fileTypeFilters', 'modeType', 'cutoffYear'], function(result) {
                 searchRequested = result.searchRequested
@@ -63,7 +59,6 @@ chrome.runtime.onMessage.addListener(async (request, sender, sendResponse) => {
                 await searchPageProcess(companyName, fileTypeFilters, modeType, cutoffYear);
                 break; 
             default:
-                console.log('Unknown page');
                 break;
         }
     } else if (request.action === 'grab_document') {
@@ -154,7 +149,6 @@ async function searchPageProcess(companyName, fileTypeFilters, modeType, cutoffY
     if (modeType !== "Regular") {
         await processFileTypes(modeType, fileTypeFilters, cutoffYear);
     }
-    
     chrome.storage.local.set({ searchRequested: false })
     console.log("Finished Processing")
 }
@@ -198,7 +192,7 @@ async function clickSort(n) {
         let  xpath = "//a[.//span[contains(text(), 'Submitted date')]]";
         let matchingElement = document.evaluate(xpath, document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null).singleNodeValue;
         let oldDate = document.querySelector('.appAttrDateTime .appAttrValue span[aria-hidden="true"]').textContent;
-        console.log(`Sorting List. CLicking...${i + 1}`)
+        console.log(`Sorting List. Clicking...${i + 1}`)
         matchingElement.click();
         await new Promise(resolve => {
             const intervalId = setInterval(() => {
@@ -258,12 +252,10 @@ async function processFileTypes(modeType, fileType, cutoffYear) {
             combinedAllData.push(...allData);
         }
         if (i < fileType.length - 1) {
-            console.log("Running removeOption")
             await removeOption(true);
         }
     }
     if (modeType === 'Link' || modeType === 'LinkAll') {
-        console.log(modeType)
         chrome.runtime.sendMessage({action: 'update_statusPane', data: JSON.stringify(combinedAllData)});
     }
 }
@@ -279,7 +271,7 @@ async function downloadDocSimple(cutoffYear) {
         let date = new Date(dateElement.textContent);
         let rowYear = date.getFullYear();
         if (rowYear >= cutoffYear) {
-            console.log(`Downloading: ${rowNum} Date: ${date}`)
+            console.log(`Downloading: ${linkName} Date: ${date}`)
             // linkElement.click();
             clickNextPage = 'Yes'
         } else {
@@ -301,10 +293,9 @@ async function processMultiPages(mode, cutoffYear) {
 
     let pageLinks = document.querySelectorAll('a[id^="head-pagination-item-"]:not([aria-label="Next Page"])');
     let maxPage = Math.max(...Array.from(pageLinks).map(link => parseInt(link.textContent)));
-    console.log(pageLinks)
-     if (pageLinks.length === 0) {
+    if (pageLinks.length === 0) {
          maxPage = 1;
-     }
+    }
     let allData = [];
 
     for (let page = 1; page <= maxPage; page++) {
@@ -350,7 +341,7 @@ async function grabLinks(page, cutoffYear) {
             data.push({text: text, link: link, date: date.substring(0, 11), page: page})
             clickNextPage = 'Yes'
         } else {
-            console.log(`Does not match: ${rowYear}, ${cutoffYear}`)
+            console.log(`Does not match: Doc: ${rowYear}, Cutoff: ${cutoffYear}`)
             clickNextPage = 'No'
             break
         }
@@ -391,7 +382,6 @@ async function selectValues(values, select) {
     }
     let event = new Event('change');
     select.dispatchEvent(event);
-    console.log('Dispatched change event');
     await new Promise(resolve => setTimeout(resolve, 1000)) // change event happens in background. Have to use manual timeout. 
     const searchButton = document.querySelector(".appButton.searchDocuments-tabs-criteriaAndButtons-buttonPad2-search.appButtonPrimary.appSearchButton.appSubmitButton.appPrimaryButton.appNotReadOnly.appIndex1");
     if (searchButton) {
