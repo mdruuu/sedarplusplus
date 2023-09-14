@@ -11,8 +11,11 @@ const fromDateElement = document.querySelector('#DocumentDate')
 const toDateElement = document.querySelector('#DocumentDate2')
 
 chrome.runtime.onMessage.addListener(async (request, sender, sendResponse) => {
+    if (request.action === 'refresh') {
+        location.reload();        
+    }
     // console.log(`Message received: ${JSON.stringify(request)}`);    
-    if (request.action === 'search') {
+    else if (request.action === 'search') {
         let searchRequested, companyName, fileTypeFilters, modeType, fromDate, toDate, pFromDate, page
         page = request.page
         await new Promise(resolve => {
@@ -24,11 +27,9 @@ chrome.runtime.onMessage.addListener(async (request, sender, sendResponse) => {
                 fromDate = result.fromDate
                 toDate = result.toDate
                 pFromDate = new Date(result.pFromDate)
-                console.log(`RESULT ${result.pFromDate}`)
                 resolve();
             })
         })
-        console.log(`TEST fromdate ${fromDate}, toDate ${toDate}, pFromDate ${pFromDate}`)
         switch(page) {
             case 'Reporting issuers list':
                 await findCompany(companyName);
@@ -113,18 +114,15 @@ async function searchPageProcess(companyName, fileTypeFilters, modeType, fromDat
     }
 
     await new Promise(resolve => setTimeout(resolve, 500)) // Need to slow down between 2nd click and calling additional functions.
-    console.log(`FromDate ${fromDate}, toDate ${toDate}`)
     let select = document.getElementById('FilingType');
     if (!fileTypeFilters.includes("All")) {
         await selectValues(fileTypeFilters, select);
     };
     if (fromDate !== '') {
-        fromDateElement.value = '';
-        console.log(`Date set to ${fromDate}`)
+        fromDateElement.value = fromDate;
     }    
     if (toDate !== '') {
-        toDateElement.value = '';
-        console.log(`Date set to ${toDate}`)
+        toDateElement.value = toDate;
     }
     const searchButton = document.querySelector(".appButton.searchDocuments-tabs-criteriaAndButtons-buttonPad2-search.appButtonPrimary.appSearchButton.appSubmitButton.appPrimaryButton.appNotReadOnly.appIndex1");
     if (searchButton) {
@@ -324,7 +322,6 @@ async function grabLinks(page, pFromDate) {
         // console.log(`TESTING Postprocessing: rowDate ${rowDate}, fromDate ${pFromDate}`)
         // let rowYear = date.getFullYear();
         // let cutoffYear = fromDate.getFullYear();
-        console.log(`Comparing ${rowDate}, Cutoff: ${pFromDate}`)
         if (rowDate >= pFromDate) {
             let link = linkElement.href;
             let text = linkElement.textContent;

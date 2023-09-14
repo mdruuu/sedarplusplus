@@ -11,7 +11,7 @@ function logtoPane(message) {
 }
 
 // Defining some global variables to be accessed in multiple places. 
-let defaultStatusPaneText, pFromDate, pToDate, selectedModeButton
+let defaultStatusPaneText, fromDate, toDate, pFromDate, pToDate, selectedModeButton
 const filingTypeElement = document.getElementById('filingType')
 const companyNameElement = document.getElementById('companyName')
 const statusPaneElement = document.getElementById('statusPane')
@@ -156,7 +156,7 @@ function performSearch() {
   chrome.tabs.query({ active: true, currentWindow: true }, function(tabs) {
     if (tabs[0].url.includes('sedarplus')) {
       saveVariables(tabs[0].title, fromDate, toDate, pFromDate, pToDate);
-      chrome.tabs.sendMessage(tabs[0].id, {action: 'search', page: tabs[0].title});
+      chrome.tabs.sendMessage(tabs[0].id, {action: 'refresh', page: tabs[0].title});
     } else {
       navigateToSedarPlus(tabs[0].id, fromDate, toDate, pFromDate, pToDate)
     }
