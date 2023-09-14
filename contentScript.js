@@ -5,53 +5,30 @@ console.log = function (message) {
     chrome.runtime.sendMessage({action: "log", message: message});
 };
 
-let isRunning = true;
 
-// let selectValueMap = {
-//     "Financials": ['ANNUAL_FINANCIAL_STATEMENTS', 'INTERIM_FINANCIAL_STATEMENTSREPORT'],
-//     "MD&A": ['ANNUAL_MDA', 'INTERIM_MDA'],
-//     "ARAIF": ["ANNUAL_REPORT", "ANNUAL_INFORMATION_FORMS"], 
-//     "News_Release": ["NEWS_RELEASES", "MATERIAL_CHANGE_REPORT"],
-//     "Prospectus": ["LONG_FORM_PROSPECTUS", "LISTING_APPLICATION", "SHORT_FORM_PROSPECTUS_NI_44101", "SHELF_PROSPECTUS_NI_44102",],
-//     "USER1": ["USER1"]
-// }
-
-let searchRequested
-let companyName
-let fileTypeFilters
-let modeType 
-let fromDate
-let toDate
-let page
-let title
-let fromDateElement = document.querySelector('#DocumentDate')
-let toDateElement = document.querySelector('#DocumentDate2')
-
-
+// let searchRequested, companyName, fileTypeFilters, modeType , fromDate, toDate, pFromDate, page, title
+const fromDateElement = document.querySelector('#DocumentDate')
+const toDateElement = document.querySelector('#DocumentDate2')
 
 chrome.runtime.onMessage.addListener(async (request, sender, sendResponse) => {
     // console.log(`Message received: ${JSON.stringify(request)}`);    
-    if (request.action === 'preload') {
-        const title = document.title
-        const issuerProfileElement = document.querySelector('.appPageTitleText');
-        const issuerProfileName = issuerProfileElement ? issuerProfileElement.textContent : '';
-
-        const searchPageElement = document.querySelector('.appAttrValue');
-        const searchPageName = searchPageElement ? searchPageElement.textContent : '';
-        chrome.runtime.sendMessage({action: 'queryTab', title: title, issuerProfileName: issuerProfileName, searchPageName: searchPageName})
-    } else if (request.action === 'search') {
+    if (request.action === 'search') {
+        let searchRequested, companyName, fileTypeFilters, modeType, fromDate, toDate, pFromDate, page
         page = request.page
         await new Promise(resolve => {
-            chrome.storage.local.get(['searchRequested', 'companyName', 'fileTypeFilters', 'modeType', 'fromDate', 'toDate'], function(result) {
+            chrome.storage.local.get(['searchRequested', 'companyName', 'fileTypeFilters', 'modeType', 'fromDate', 'toDate', 'pFromDate', 'pToDate'], function(result) {
                 searchRequested = result.searchRequested
                 companyName = result.companyName
                 fileTypeFilters = result.fileTypeFilters
                 modeType = result.modeType
                 fromDate = result.fromDate
                 toDate = result.toDate
+                pFromDate = new Date(result.pFromDate)
+                console.log(`RESULT ${result.pFromDate}`)
                 resolve();
             })
         })
+        console.log(`TEST fromdate ${fromDate}, toDate ${toDate}, pFromDate ${pFromDate}`)
         switch(page) {
             case 'Reporting issuers list':
                 await findCompany(companyName);
@@ -60,7 +37,7 @@ chrome.runtime.onMessage.addListener(async (request, sender, sendResponse) => {
                 await clickDocLink(companyName);
                 break;
             case 'Search':
-                await searchPageProcess(companyName, fileTypeFilters, modeType, fromDate, toDate);
+                await searchPageProcess(companyName, fileTypeFilters, modeType, fromDate, toDate, pFromDate);
                 break; 
             default:
                 break;
@@ -69,7 +46,6 @@ chrome.runtime.onMessage.addListener(async (request, sender, sendResponse) => {
         grabDocument(request.date, request.text);
     }
 })
-
 
 
 async function findCompany(companyName) {
@@ -123,11 +99,11 @@ async function clickDocLink(companyName) {
     const targetDocLink = Array.from(docLinks).find(el => el.textContent.includes('Search and download documents for this profile'));
     if (targetDocLink) {
     targetDocLink.click();
-    console.log('Clicking Doc Link')
+    console.log('Going to Document Search Page')
     }
 }
 
-async function searchPageProcess(companyName, fileTypeFilters, modeType, fromDate, toDate) {
+async function searchPageProcess(companyName, fileTypeFilters, modeType, fromDate, toDate, pFromDate) {
     let searchPageElement = '.searchDocuments-tabs-criteriaAndButtons-criteria-criteriaBox-row1-multiDocSearch-multiPartyRepeaterWrapper-partynameFilterRepeater-filterDomain-entityNameNumberLookupBox-partyNameHeader'
     try {
         await checkRightPage(companyName, searchPageElement)
@@ -137,33 +113,40 @@ async function searchPageProcess(companyName, fileTypeFilters, modeType, fromDat
     }
 
     await new Promise(resolve => setTimeout(resolve, 500)) // Need to slow down between 2nd click and calling additional functions.
-    
+    console.log(`FromDate ${fromDate}, toDate ${toDate}`)
     let select = document.getElementById('FilingType');
     if (!fileTypeFilters.includes("All")) {
         await selectValues(fileTypeFilters, select);
     };
     if (fromDate !== '') {
-        fromDateElement.value = fromDate;
+        fromDateElement.value = '';
+        console.log(`Date set to ${fromDate}`)
     }    
     if (toDate !== '') {
-        toDateElement.value = toDate;
+        toDateElement.value = '';
+        console.log(`Date set to ${toDate}`)
     }
-    let sort = await dateClassify()
+    const searchButton = document.querySelector(".appButton.searchDocuments-tabs-criteriaAndButtons-buttonPad2-search.appButtonPrimary.appSearchButton.appSubmitButton.appPrimaryButton.appNotReadOnly.appIndex1");
+    if (searchButton) {
+        searchButton.click();
+    }
+    await waitForElementToDisappear('catProcessing')
+    let sort = await sortClassify()
     if (sort === 'descending') {
-        
+
     } else if (sort === 'ascending') {
         await clickSort(1);
     } else if (sort === 'unordered' ) {
         await clickSort(2);
     } 
     if (modeType !== "Regular") {
-        await processFileTypes(modeType, fileTypeFilters, fromDate, toDate);
+        await processFileTypes(modeType, fileTypeFilters, pFromDate);
     }
     chrome.storage.local.set({ searchRequested: false })
     console.log("Finished Processing")
 }
 
-async function dateClassify() {
+async function sortClassify() {
     let numTime = [];
     let diffList = [];
     let dateElements = '.appAttrDateTime .appAttrValue span[aria-hidden="true"]';
@@ -216,7 +199,6 @@ async function clickSort(n) {
     }
 }
 
-
 async function grabDocument(date, text) {
     chrome.runtime.sendMessage({ action: 'statusPane_tempChange'})
     await removeOption(false);
@@ -244,19 +226,18 @@ async function grabDocument(date, text) {
     }
 }
 
-
-async function processFileTypes(modeType, fileType, fromDate, toDate) {
+async function processFileTypes(modeType, fileType, pFromDate) {
     let combinedAllData = []
     for (let i = 0; i < fileType.length; i++) {
         if (modeType === "Download") {
-            await downloadDocSimple();
+            await downloadDocSimple(pFromDate);
         } 
         else if (modeType === "Link") {
             let allData = await grabLinks(1);
             combinedAllData.push(...allData);
         }
         else if (modeType === 'DownloadAll' || modeType === 'LinkAll') {
-            let allData = await processMultiPages(modeType, fromDate, toDate);
+            let allData = await processMultiPages(modeType, pFromDate);
             combinedAllData.push(...allData);
         }
         if (i < fileType.length - 1) {
@@ -264,23 +245,22 @@ async function processFileTypes(modeType, fileType, fromDate, toDate) {
         }
     }
     if (modeType === 'Link' || modeType === 'LinkAll') {
-        chrome.runtime.sendMessage({action: 'update_statusPane', data: JSON.stringify(combinedAllData)});
+        chrome.runtime.sendMessage({action: 'update_statusPane', data: JSON.stringify(combinedAllData), pFromDate: pFromDate});
     }
 }
 
-async function downloadDocSimple(fromDate, toDate) {
+async function downloadDocSimple(pFromDate) {
     let linkElements = document.querySelectorAll('.appTblCell2 a.appDocumentView.appResourceLink.appDocumentLink');
     let clickNextPage = 'No'
     for (let linkElement of linkElements) {
         let linkName = linkElement.querySelector('span').textContent;
         let row = linkElement.closest('.appTblRow');
-        let rowNum = row.className;
         let dateElement = row.querySelector('.appAttrDateTime .appAttrValue span[aria-hidden="true"]');
-        let date = new Date(dateElement.textContent);
-        let rowYear = date.getFullYear();
-        let cutoffYear = fromDate.getFullYear();
-        if (rowYear >= cutoffYear) {
-            console.log(`Downloading: ${linkName} Date: ${date}`)
+        let rowDate = new Date(dateElement.textContent);
+        // let rowYear = date.getFullYear();
+        // let cutoffYear = fromDate.getFullYear();
+        if (rowDate >= pFromDate) {
+            console.log(`Downloading: ${linkName} Date: ${rowDate}`)
             // linkElement.click();
             clickNextPage = 'Yes'
         } else {
@@ -294,7 +274,7 @@ async function downloadDocSimple(fromDate, toDate) {
 }
 
 
-async function processMultiPages(mode, fromDate, toDate) {
+async function processMultiPages(mode, pFromDate) {
     let dateId = '.appAttrDateTime .appAttrValue span[aria-hidden="true"]'
     let rowElement = document.querySelector('.appTblRow.appTblRow0');
     let newDate;
@@ -308,7 +288,7 @@ async function processMultiPages(mode, fromDate, toDate) {
     let allData = [];
 
     for (let page = 1; page <= maxPage; page++) {
-        let result = (mode === 'DownloadAll') ? await downloadDocSimple(fromDate, toDate) : await grabLinks(page, fromDate, toDate);
+        let result = (mode === 'DownloadAll') ? await downloadDocSimple(pFromDate) : await grabLinks(page, pFromDate);
         let data = result.data;
         if (mode === 'LinkAll') allData.push(...data);
         
@@ -333,25 +313,26 @@ async function processMultiPages(mode, fromDate, toDate) {
     return allData 
 }
 
-async function grabLinks(page, fromDate, toDate) {
+async function grabLinks(page, pFromDate) {
     let data = [];
     let rows = Array.from(document.querySelectorAll('.appTblRow')); 
     let clickNextPage = 'No'
     for (let row of rows.slice(1)) {
         let linkElement = row.querySelector('.appTblCell2 a.appDocumentView.appResourceLink.appDocumentLink');
         let dateElement = row.querySelector('.appAttrDateTime .appAttrValue span[aria-hidden="true"]');
-        let date = new Date(dateElement.textContent);
-        let rowYear = date.getFullYear();
-        let cutoffYear = fromDate.getFullYear();
-
-        if (rowYear >= cutoffYear) {
+        let rowDate = new Date(dateElement.textContent);
+        // console.log(`TESTING Postprocessing: rowDate ${rowDate}, fromDate ${pFromDate}`)
+        // let rowYear = date.getFullYear();
+        // let cutoffYear = fromDate.getFullYear();
+        console.log(`Comparing ${rowDate}, Cutoff: ${pFromDate}`)
+        if (rowDate >= pFromDate) {
             let link = linkElement.href;
             let text = linkElement.textContent;
             let date = dateElement.textContent;
             data.push({text: text, link: link, date: date.substring(0, 11), page: page})
             clickNextPage = 'Yes'
         } else {
-            console.log(`Does not match: Doc: ${rowYear}, Cutoff: ${cutoffYear}`)
+            console.log(`Date reached. Doc: ${rowDate}, Cutoff: ${pFromDate}`)
             clickNextPage = 'No'
             break
         }
@@ -436,8 +417,6 @@ async function checkRightPage(companyName, elementId) {
         }
     })
 }
-
-
 
 
 

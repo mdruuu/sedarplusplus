@@ -26,14 +26,14 @@ body {
   #modeType {
     width: 100%;
   }
-  #companyName, #cutoffYear {
+  #companyName, #dateString {
     width: 100%;
     font-size: 14px;
     border: none;
     border-bottom: 1px solid;    
     margin: 3px;   
   }
-  #companyName:focus, #cutoffYear:focus{
+  #companyName:focus, #dateString:focus{
     outline: 3px solid lightblue;
     border: none;
   }

@@ -11,14 +11,14 @@ function logtoPane(message) {
 }
 
 // Defining some global variables to be accessed in multiple places. 
-let defaultStatusPaneText
-let filingTypeElement = document.getElementById('filingType')
-let companyNameElement = document.getElementById('companyName')
-let statusPaneElement = document.getElementById('statusPane')
-let dateElement = document.getElementById('dateString')
-let modeButtonElement = document.getElementById('modeType');
-let modeButtons = document.querySelectorAll('.mode-button');
-let selectedModeButton // needs to be defined at performSearch, but need to be able to acces it in another function.
+let defaultStatusPaneText, pFromDate, pToDate, selectedModeButton
+const filingTypeElement = document.getElementById('filingType')
+const companyNameElement = document.getElementById('companyName')
+const statusPaneElement = document.getElementById('statusPane')
+const dateElement = document.getElementById('dateString')
+const modeButtonElement = document.getElementById('modeType');
+const modeButtons = document.querySelectorAll('.mode-button');
+
 
 window.onload = function() {
   defaultStatusPaneText = document.getElementById('statusPane').innerHTML;
@@ -50,7 +50,7 @@ window.onload = function() {
         option.selected = fileTypeFilters.includes(option.value);
       });
     }
-    dateElement.value = result.cutoffYear || '';
+    dateElement.value = result.dateString || '';
     statusPaneElement.innerHTML = result.statusPane || defaultStatusPaneText
     let savedModeType = result.modeType || 'Regular';
     modeButtons.forEach(button => {
@@ -64,17 +64,41 @@ window.onload = function() {
   document.getElementById('companyName').focus();
 };
 
+// SHORTCUTS AAND KEYDOWN LISTENERS 
+function addKeydownListener(elementId) {
+  document.getElementById(elementId).addEventListener('keydown', function (e) {
+    if (e.key === 'Enter') {
+      performSearch();
+    }
+    if (e.ctrlKey && e.shiftKey && e.key === "Backspace") {
+      reset();
+    }
+  });
+}
+document.getElementById('searchBtn').addEventListener('click', performSearch);
+addKeydownListener('companyName');
+addKeydownListener('dateString');
+addKeydownListener('filingType');
+addKeydownListener('modeType');
+
+document.getElementById('clearBtn').addEventListener('click', reset);
+
+document.getElementById('reloadBtn').addEventListener('click', () => {
+  chrome.runtime.reload();  
+})
+
+// EVENT LISTENERS 
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   if (request.action === 'log') {
     logtoPane(request.message)
   }
 
+  // For Linkgrabber mode, display the results in statusPane as an HTML table
   if (request.action === 'update_statusPane') {
     // statusPane.innerHTML = '' DISABLING IT FOR TESTING.
     let allData = JSON.parse(request.data)
     allData.sort((a, b) => new Date(b.date) - new Date(a.date));
-    let dateString = dateElement.value;
-    allData = allData.filter(data => new Date(data.date).getFullYear() >= dateString);
+    allData = allData.filter(data => new Date(data.date) >= new Date(pFromDate));
     statusPaneElement.innerHTML = `<table><tr><th>Page</th><th>Title</th><th>Date</th></tr>${allData.map(data => `<tr><td>${data.page}</td><td><a href="#" data-date="${data.date}">${data.text}</a></td><td>${data.date}</td></tr>`).join('')}</table>`;
     chrome.storage.local.set({ statusPane: statusPaneElement.innerHTML })
   }
@@ -88,26 +112,57 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       statusPane.innerHTML = currentStatPane;
     }, 3000);    
   }
+
+  if (request.action === 'need_restart') {
+    chrome.tabs.query({ active: true, currentWindow: true }, function(tabs) {
+      navigateToSedarPlus(tabs[0].id, fromDate, toDate, pFromDate, pToDate)
+    })
+  }
+
+});
+
+// Code for calling grab_document function in cs.js when the html table is clicked on
+document.addEventListener('click', function(e) {
+  if (e.target.tagName === 'A' && e.target.hasAttribute('data-date')) {
+    e.preventDefault();
+    let date = e.target.getAttribute('data-date'); 
+    let text = e.target.innerText;
+    
+    chrome.tabs.query({active: true, currentWindow: true}, function(tabs) {
+      chrome.tabs.sendMessage(tabs[0].id, {action: 'grab_document', date: date, text: text });
+    });
+  }
 });
 
 
-document.getElementById('searchBtn').addEventListener('click', performSearch);
-function addEnterListener(elementId) {
-  document.getElementById(elementId).addEventListener('keydown', function (e) {
-      if (e.key === 'Enter') {
-          performSearch();
-      }
-      if (e.ctrlKey && e.shiftKey && e.key === "Backspace") {
-        reset();
-      }
-  });
+//FUNCTIONS 
+function performSearch() {
+  statusPaneElement.innerHTML = '';
+  selectedModeButton = modeButtonElement.querySelector('.mode-button.selected')
+  if (selectedModeButton.value !== "Regular" && !dateElement.value.trim()) {
+    console.log("Specify Date. Hit Reset to see instruction.")
+    return;
+  }
+  let dateString = dateElement.value
+  let parsedDate = parseDates(dateString)
+  let fromDate = parsedDate.fromDate
+  let toDate = parsedDate.toDate
+  pFromDate = processDate(fromDate)
+  pToDate = processDate(toDate)
+  
+  console.log(`Search Request Received.`);
+  chrome.storage.local.clear();
+  
+  chrome.tabs.query({ active: true, currentWindow: true }, function(tabs) {
+    if (tabs[0].url.includes('sedarplus')) {
+      saveVariables(tabs[0].title, fromDate, toDate, pFromDate, pToDate);
+      chrome.tabs.sendMessage(tabs[0].id, {action: 'search', page: tabs[0].title});
+    } else {
+      navigateToSedarPlus(tabs[0].id, fromDate, toDate, pFromDate, pToDate)
+    }
+  })
 }
-addEnterListener('companyName');
-addEnterListener('cutoffYear');
-addEnterListener('filingType');
-addEnterListener('modeType');
 
-document.getElementById('clearBtn').addEventListener('click', reset);
 function reset() {
   // Reset form inputs to their default values
   companyNameElement.value = '';
@@ -122,85 +177,27 @@ function reset() {
     }
   })
 
-  
   chrome.storage.local.clear()
   chrome.runtime.sendMessage({ action: 'reset_count' })
   companyNameElement.focus();
 }
 
-document.getElementById('reloadBtn').addEventListener('click', () => {
-  chrome.runtime.reload();  
-})
 
-// document.getElementById('stopBtn').addEventListener('click', () => {
-//   chrome.runtime.sendMessage( { action: "stop_running" })
-//   chrome.storage.local.set({ searchRequested: false })
-// })
-
-document.addEventListener('click', function(e) {
-  if (e.target.tagName === 'A' && e.target.hasAttribute('data-date')) {
-    e.preventDefault();
-    let date = e.target.getAttribute('data-date'); 
-    let text = e.target.innerText;
-    
-    chrome.tabs.query({active: true, currentWindow: true}, function(tabs) {
-      chrome.tabs.sendMessage(tabs[0].id, {action: 'grab_document', date: date, text: text });
-    });
-  }
-});
-
-
-function performSearch() {
-  statusPaneElement.innerHTML = '';
-  selectedModeButton = modeButtonElement.querySelector('.mode-button.selected')
-  if (selectedModeButton.value !== "Regular" && !dateElement.value.trim()) {
-    console.log("Specify Dates")
-    return;
-  }
-  let dateString = dateElement.value
-  let parsedDate = parseDates(dateString)
-  let fromDate = parsedDate.fromDate
-  let toDate = parsedDate.toDate
-  
-  console.log(`Search Request Received.`);
-  chrome.storage.local.clear();
-  
-  chrome.tabs.query({ active: true, currentWindow: true }, function(tabs) {
-    if (tabs[0].url.includes('sedarplus')) {
-      saveVariables(tabs[0].title, fromDate, toDate);
-      chrome.tabs.sendMessage(tabs[0].id, {action: 'search', page: tabs[0].title});
-    } else {
-      navigateToSedarPlus(tabs[0].id)
-    }
-  })
-}
-
-chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
-  if (request.action === 'need_restart') {
-    chrome.tabs.query({ active: true, currentWindow: true }, function(tabs) {
-      navigateToSedarPlus(tabs[0].id)
-    })
-  }
-
-});
-
-
-
-function navigateToSedarPlus(tabId) {
+function navigateToSedarPlus(tabId, fromDate, toDate, pFromDate, pToDate) {
   const targetUrl = 'https://www.sedarplus.ca/csa-party/service/create.html?targetAppCode=csa-party&service=searchReportingIssuers&_locale=en';
   const landingUrl = 'https://www.sedarplus.ca/landingpage/';
 
   console.log('Navigating to Sedar+.');
   chrome.tabs.update(tabId, { url: targetUrl }, async function(tab) {
     await new Promise(resolve => setTimeout(resolve, 1000))
-    saveVariables(tabId, 'Reporting issuers list');
+    saveVariables(tabId, fromDate, toDate, pFromDate, pToDate);
     await new Promise(resolve => setTimeout(resolve, 3500));
     chrome.tabs.query({active: true, currentWindow: true}, function(tabs) {
       if (tabs[0].url === landingUrl) {
-        console.log("Sedar+ Rerouted us. Reloading.");
+        console.log("Sedar Rerouted us. Reloading.");
         chrome.tabs.update(tabId, { url: targetUrl }, async function(tab) {
           await new Promise(resolve => setTimeout(resolve, 1000))
-          saveVariables(tabId, 'Reporting issuers list');
+          saveVariables(tabId, fromDate, toDate, pFromDate, pToDate);
         });
       }
     });
@@ -208,14 +205,15 @@ function navigateToSedarPlus(tabId) {
 }
     
 
-function saveVariables(tabId, fromDate, toDate) {
+function saveVariables(tabId, fromDate, toDate, pFromDate, pToDate) {
+  console.log(`saveVaraibles ${pFromDate}`)
   const fileTypeFilters = Array.from(filingTypeElement.selectedOptions).map(option => option.value);
 
-  chrome.storage.local.set({ searchRequested: true, companyName: companyNameElement.value, fileTypeFilters: fileTypeFilters, modeType: selectedModeButton.value, fromDate: fromDate, toDate: toDate}); 
+  chrome.storage.local.set({ searchRequested: true, companyName: companyNameElement.value, fileTypeFilters: fileTypeFilters, modeType: selectedModeButton.value, dateString: dateElement.value, fromDate: fromDate, toDate: toDate, pFromDate: pFromDate.toString(), pToDate: pToDate}); 
 }
 
 
-
+//Date parsing functions below. Unit tests complete. 
 function parseDates(input) {
   let fromDate, toDate;
   let today = new Date();
@@ -268,4 +266,9 @@ function formatDate(date) {
   let month = String(date.getMonth() + 1).padStart(2, '0'); // Months are 0-based
   let year = date.getFullYear();
   return `${day}/${month}/${year}`;
+}
+
+function processDate(date) {
+  let [day, month, year] = date.split('/')
+  return pDate = new Date(year, month-1, day);
 }
