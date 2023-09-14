@@ -164,30 +164,6 @@ function performSearch() {
 }
 
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
-  // if (request.action === 'queryTab') {
-  //   chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
-  //     let tabId = tabs[0].id;
-  //     let title = request.title;
-  //     let issuerProfileName = request.issuerProfileName;
-  //     let lowerCaseIssuerProfileName = issuerProfileName.trim() !== '' ? issuerProfileName.toLowerCase() : '';
-      
-  //     let searchPageName = request.searchPageName;
-  //     let lowerCaseSearchPageName = searchPageName.trim() !== '' ? searchPageName.toLowerCase() : '';
-      
-  //     let companyName = companyNameElement.value.toLowerCase();
-
-  //     if (title === 'Reporting issuers list') {
-  //       saveVariables(tabId, 'Reporting issuers list');
-  //     } else if (title === "View Issuer Profile" && lowerCaseIssuerProfileName.includes(companyName)) {
-  //       saveVariables(tabId, 'View Issuer Profile');
-  //     } else if (title === 'Search' && lowerCaseSearchPageName.includes(companyName)) {
-  //       saveVariables(tabId, 'Search');
-  //     } else {
-  //       navigateToSedarPlus(tabId);
-  //     }
-  //   });
-  // }
-
   if (request.action === 'need_restart') {
     chrome.tabs.query({ active: true, currentWindow: true }, function(tabs) {
       navigateToSedarPlus(tabs[0].id)
