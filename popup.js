@@ -1,13 +1,31 @@
 let defaultStatusPaneText
-let modeTypeElement = document.getElementById('mode-button.selected');
+let modeButtonElement = document.getElementById('modeType');
+let selectedModeButton // needs to be defined at performSearch, but need to be able to acces it in another function.
 let filingTypeElement = document.getElementById('filingType')
 let companyNameElement = document.getElementById('companyName')
 let statusPaneElement = document.getElementById('statusPane')
 let cutoffYearElement = document.getElementById('cutoffYear')
-
+let modeButtons = document.querySelectorAll('.mode-button');
 
 window.onload = function() {
   defaultStatusPaneText = document.getElementById('statusPane').innerHTML;
+  modeButtons.forEach(button => {
+    button.addEventListener('click', function() {
+      modeButtons.forEach(btn => btn.classList.remove('selected'));
+      this.classList.add('selected');
+    });
+    
+  });
+  filingTypeElement.addEventListener('change', function() {
+    let allOption = this.options[0]; // assuming "All/Default" is the first option
+    if (allOption.selected) {
+        for (let i = 1; i < this.options.length; i++) {
+            this.options[i].selected = false;
+        }
+    } else {
+        allOption.selected = false;
+    }
+  });
   chrome.storage.local.set({ searchRequested: false })
   chrome.storage.local.get(['companyName', 'fileTypeFilters', 'modeType', 'cutoffYear', 'statusPane'], function(result) {
     companyNameElement.value = result.companyName || ''
@@ -21,22 +39,15 @@ window.onload = function() {
     }
     cutoffYearElement.value = result.cutoffYear || '';
     statusPaneElement.innerHTML = result.statusPane || defaultStatusPaneText
-
-    let modeButtons = document.querySelectorAll('.mode-button');
     let savedModeType = result.modeType || 'Regular';
     modeButtons.forEach(button => {
-      button.addEventListener('click', function() {
-        modeButtons.forEach(btn => btn.classList.remove('selected'));
-        this.classList.add('selected');
-      });
       if (button.value === savedModeType) {
         button.classList.add('selected');
       } else {
         button.classList.remove('selected');
       }
-    });
+    })
   })
-
   document.getElementById('companyName').focus();
 };
 
@@ -101,6 +112,14 @@ function reset() {
   filingTypeElement.selectedIndex = 0;
   cutoffYearElement.value = '';
   statusPaneElement.innerHTML = defaultStatusPaneText;
+  modeButtons.forEach(button => {
+    if (button.value === 'Regular') {
+      button.classList.add('selected');
+    } else {
+      button.classList.remove('selected');
+    }
+  })
+
   
   chrome.storage.local.clear()
   chrome.runtime.sendMessage({ action: 'reset_count' })
@@ -111,10 +130,10 @@ document.getElementById('reloadBtn').addEventListener('click', () => {
   chrome.runtime.reload();  
 })
 
-document.getElementById('stopBtn').addEventListener('click', () => {
-  chrome.runtime.sendMessage( { action: "stop_running" })
-  chrome.storage.local.set({ searchRequested: false })
-})
+// document.getElementById('stopBtn').addEventListener('click', () => {
+//   chrome.runtime.sendMessage( { action: "stop_running" })
+//   chrome.storage.local.set({ searchRequested: false })
+// })
 
 document.addEventListener('click', function(e) {
   if (e.target.tagName === 'A' && e.target.hasAttribute('data-date')) {
@@ -131,7 +150,8 @@ document.addEventListener('click', function(e) {
 
 function performSearch() {
   statusPaneElement.innerHTML = '';
-  console.log('Search Request Received.');
+  selectedModeButton = modeButtonElement.querySelector('.mode-button.selected')
+  console.log(`Search Request Received. Mode ${selectedModeButton.value}`);
   chrome.storage.local.clear();
   chrome.tabs.query({ active: true, currentWindow: true }, function(tabs) {
     if (tabs[0].url.includes('sedarplus')) {
@@ -203,6 +223,6 @@ function navigateToSedarPlus(tabId) {
 function saveVariables(tabId, pageMessage) {
   const fileTypeFilters = Array.from(filingTypeElement.selectedOptions).map(option => option.value);
 
-  chrome.storage.local.set({ searchRequested: true, companyName: companyNameElement.value, fileTypeFilters: fileTypeFilters, modeType: modeTypeElement.value, cutoffYear: cutoffYearElement.value}); 
+  chrome.storage.local.set({ searchRequested: true, companyName: companyNameElement.value, fileTypeFilters: fileTypeFilters, modeType: selectedModeButton.value, cutoffYear: cutoffYearElement.value}); 
 }
 
