@@ -11,7 +11,7 @@ function logtoPane(message) {
 }
 
 // Defining some global variables to be accessed in multiple places. 
-let defaultStatusPaneText, fromDate, toDate, pFromDate, pToDate, selectedModeButton, currentStatPane
+let defaultStatusPaneText, fromDate, toDate, pFromDate, pToDate, selectedModeButton, linkTableStatPane
 const filingTypeElement = document.getElementById('filingType')
 const companyNameElement = document.getElementById('companyName')
 const statusPaneElement = document.getElementById('statusPane')
@@ -40,7 +40,7 @@ window.onload = function() {
     }
   });
   chrome.storage.local.set({ searchRequested: false })
-  chrome.storage.local.get(['companyName', 'fileTypeFilters', 'modeType', 'cutoffYear', 'statusPane'], function(result) {
+  chrome.storage.local.get(['companyName', 'fileTypeFilters', 'modeType', 'dateString', 'statusPane'], function(result) {
     companyNameElement.value = result.companyName || ''
     let fileTypeFilters = result.fileTypeFilters || [];
     if (fileTypeFilters.length === 0) {
@@ -105,13 +105,25 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 
   // On clicking link to download the file, temporarily blanks out the statusPane and logs some interim messages - so people know what's happening. 
   if (request.action === 'statusPane_tempChange') {
-    currentStatPane = statusPane.innerHTML
+    linkTableStatPane = statusPane.innerHTML
     statusPane.innerHTML = ''
     console.log("Fetching Doc. Please wait.")
+    setTimeout(() => {
+      let statPaneContent = statusPane.innerHTML
+      if (!statPaneContent.includes("Fetching Doc")) {
+        return;
+      } else {
+        console.log("Error while downloading. Please try again. Contact developer if issue persists. Reverting to Links in 3 seconds.")
+        setTimeout(() => {
+          statusPane.innerHTML = linkTableStatPane
+          chrome.storage.set({ statusPane: linkTableStatPane})
+        }, 3000)
+      }
+    }, 7500)
   }
   if (request.action === 'statusPane_original') {
     setTimeout(() => {
-      statusPane.innerHTML = currentStatPane;
+      statusPane.innerHTML = linkTableStatPane;
     }, 500)
   }
 
@@ -210,7 +222,16 @@ function navigateToSedarPlus(tabId, fromDate, toDate, pFromDate, pToDate) {
 function saveVariables(tabId, fromDate, toDate, pFromDate, pToDate) {
   const fileTypeFilters = Array.from(filingTypeElement.selectedOptions).map(option => option.value);
 
-  chrome.storage.local.set({ searchRequested: true, companyName: companyNameElement.value, fileTypeFilters: fileTypeFilters, modeType: selectedModeButton.value, dateString: dateElement.value, fromDate: fromDate, toDate: toDate, pFromDate: pFromDate.toString(), pToDate: pToDate}); 
+  chrome.storage.local.set({ 
+    searchRequested: true, 
+    companyName: companyNameElement.value, 
+    fileTypeFilters: fileTypeFilters, 
+    modeType: selectedModeButton.value, 
+    dateString: dateElement.value, 
+    fromDate: fromDate, 
+    toDate: toDate, 
+    pFromDate: pFromDate.toString(), 
+    pToDate: pToDate}); 
 }
 
 

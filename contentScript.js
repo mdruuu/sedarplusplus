@@ -215,20 +215,43 @@ async function grabDocument(date, text) {
     // Convert date from "15 Aug 2022" format to "DD/MM/YYYY" format
     let parts = date.split(' ');
     let months = {Jan: '01', Feb: '02', Mar: '03', Apr: '04', May: '05', Jun: '06', Jul: '07', Aug: '08', Sep: '09', Oct: '10', Nov: '11', Dec: '12'};
-    date = parts[0] + '/' + months[parts[1]] + '/' + parts[2];
+    let slashDate = parts[0] + '/' + months[parts[1]] + '/' + parts[2];
 
-    const fromDateElement = document.querySelector('#DocumentDate')
-    const toDateElement = document.querySelector('#DocumentDate2')
+    //? For whatever dumbass reason, I gotta re-identify this date element each time I set the date. otherwise, dates won't enter in properly. 
+    let fromDateElement = document.querySelector('#DocumentDate')
+    let toDateElement = document.querySelector('#DocumentDate2')
 
-    fromDateElement.value = date;
-    toDateElement.value = date;
+    fromDateElement.value = slashDate;
+    toDateElement.value = slashDate;
     searchButton.click();
     await waitForElementToDisappear('catProcessing')
+    await new Promise(resolve => setTimeout(resolve, 500)) // slowing down - otherwise, the error loop below sometimes doesn't run properly. 
+
+    let errorElement = document.querySelector(".appSearchNoResults")
+    if (errorElement) {
+        let errorText = errorElement.textContent
+        if (errorText.includes('no search results')) {
+            let fromDate = prevNextDay(slashDate, 'prev')
+            let toDate = prevNextDay(slashDate, 'next')
+            let fromDateElement = document.querySelector('#DocumentDate')
+            let toDateElement = document.querySelector('#DocumentDate2')        
+            fromDateElement.value = fromDate;
+            toDateElement.value = toDate;
+            searchButton.click();
+            await waitForElementToDisappear('catProcessing')
+        }
+    }
+
     // Look for the element and click on the link where span == text
     let links = document.querySelectorAll('.appDocumentView.appResourceLink.appDocumentLink');
     for (let link of links) {
+        let row = link.closest('.appTblRow');
+        let dateElement = row.querySelector('.appAttrDateTime .appAttrValue span[aria-hidden="true"]');
+        let dateText = dateElement.textContent
+        let truncDate = dateText.substring(0,11)
+        
         let span = link.querySelector('span');
-        if (span && span.textContent === text) {
+        if (span && span.textContent === text && truncDate === date) {
             link.click();
             break;
         }
@@ -331,9 +354,6 @@ async function grabLinks(page, pFromDate) {
         let linkElement = row.querySelector('.appTblCell2 a.appDocumentView.appResourceLink.appDocumentLink');
         let dateElement = row.querySelector('.appAttrDateTime .appAttrValue span[aria-hidden="true"]');
         let rowDate = new Date(dateElement.textContent);
-        // console.log(`TESTING Postprocessing: rowDate ${rowDate}, fromDate ${pFromDate}`)
-        // let rowYear = date.getFullYear();
-        // let cutoffYear = fromDate.getFullYear();
         if (rowDate >= pFromDate) {
             let link = linkElement.href;
             let text = linkElement.textContent;
@@ -434,7 +454,28 @@ function formatDate(date) {
   return `${day}/${month}/${year}`;
 }
 
+function prevNextDay(date, mode) {
+    let parts = date.split('/');
+    let day = parseInt(parts[0]);
+    let month = parseInt(parts[1]);
+    let year = parseInt(parts[2]);
+    let n 
+    if (mode === 'prev') { n = -1} else if (mode === 'next') { n = 1 } else {console.log("Incorrect prevNextDay mode.")}
 
+    // Create a new Date object with the given date
+    let dateObj = new Date(year, month -1, day);
+
+    // Subtract one day from the date
+    dateObj.setDate(dateObj.getDate() + n);
+
+    // Format the new date in DD/MM/YYYY format
+    let newDay = String(dateObj.getDate()).padStart(2, '0');
+    let newMonth = String(dateObj.getMonth() + 1).padStart(2, '0'); // Months are 0-based
+    let newYear = dateObj.getFullYear();
+
+    let newDate = `${newDay}/${newMonth}/${newYear}`;
+    return newDate;
+}
 
 
 
