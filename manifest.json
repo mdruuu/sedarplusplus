@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "SedarPlusplus",
-  "version": "0.1",
+  "version": "1.0",
   "description": "Make SEDAR+ suck a little less",
   "permissions": ["activeTab", "scripting", "storage", "webNavigation"],
   "host_permissions": ["http://www.sedarplus.ca/*", "https://www.sedarplus.ca/*"],

@@ -83,9 +83,9 @@ addKeydownListener('modeType');
 
 document.getElementById('clearBtn').addEventListener('click', reset);
 
-document.getElementById('reloadBtn').addEventListener('click', () => {
-  chrome.runtime.reload();  
-})
+// document.getElementById('reloadBtn').addEventListener('click', () => {
+//   chrome.runtime.reload();  
+// })
 
 // EVENT LISTENERS 
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
