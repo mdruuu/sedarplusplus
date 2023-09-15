@@ -107,8 +107,10 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   if (request.action === 'statusPane_tempChange') {
     linkTableStatPane = statusPane.innerHTML
     statusPane.innerHTML = ''
-    console.log("Fetching Doc. Please wait.")
-    chrome.storage.local.set({ statusPane: linkTableStatPane })    
+    console.log("Fetching Doc. Please wait.") 
+    setTimeout(() => {
+      chrome.storage.local.set({ statusPane: linkTableStatPane })    
+    }, 750) // If it's not delayed, then it clashes with logtoPane's storage set, and on load, statusPane will display 'Fetching doc.'
     setTimeout(() => {
       let statPaneContent = statusPane.innerHTML
       if (!statPaneContent.includes("Fetching Doc")) {
@@ -117,7 +119,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         console.log("Error while downloading. Please try again. Contact developer if issue persists. Reverting to Links in 3 seconds.")
         setTimeout(() => {
           statusPane.innerHTML = linkTableStatPane
-          chrome.storage.local.set({ statusPane: linkTableStatPane})
+          chrome.storage.local.set({ statusPane: linkTableStatPane })
         }, 3000)
       }
     }, 7500)
