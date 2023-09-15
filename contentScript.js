@@ -126,7 +126,7 @@ async function searchPageProcess(companyName, fileTypeFilters, modeType, fromDat
         toDateElement.value = toDate;
         console.log(`Set To Date value to: ${toDate}`)
     } else if (fromDate!== '' && toDate === '') {
-        let todayDate = formatDate(new Date(today.getDate()))
+        let todayDate = formatDate(new Date())
         toDateElement.value = todayDate
         console.log(`Set To Date value to: ${todayDate}`)
     }
@@ -265,10 +265,11 @@ async function downloadDocSimple(pFromDate) {
         let row = linkElement.closest('.appTblRow');
         let dateElement = row.querySelector('.appAttrDateTime .appAttrValue span[aria-hidden="true"]');
         let rowDate = new Date(dateElement.textContent);
+        let shortRowDate = rowDate.toString().substring(0,11)
         // let rowYear = date.getFullYear();
         // let cutoffYear = fromDate.getFullYear();
         if (rowDate >= pFromDate) {
-            // console.log(`Downloading: ${linkName} Date: ${rowDate}`)
+            console.log(`Downloading: ${linkName} Date: ${shortRowDate}`)
             linkElement.click();
             clickNextPage = 'Yes'
         } else {
