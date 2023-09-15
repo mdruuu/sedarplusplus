@@ -169,11 +169,12 @@ function performSearch() {
     pToDate = ''
   } else {
     let parsedDate = parseDates(dateString)
-    let fromDate = parsedDate.fromDate
-    let toDate = parsedDate.toDate
+    fromDate = parsedDate.fromDate
+    toDate = parsedDate.toDate
     pFromDate = processDate(fromDate)
     pToDate = processDate(toDate)
   }
+  console.log(`TEST ${fromDate} ${toDate} ${pFromDate} ${pToDate}`)
   
   console.log(`Search Request Received.`);
   chrome.storage.local.clear();

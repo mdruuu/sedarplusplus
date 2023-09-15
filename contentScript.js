@@ -106,13 +106,11 @@ async function clickDocLink(companyName) {
 async function searchPageProcess(companyName, fileTypeFilters, modeType, fromDate, toDate, pFromDate) {
     let searchPageElement = '.searchDocuments-tabs-criteriaAndButtons-criteria-criteriaBox-row1-multiDocSearch-multiPartyRepeaterWrapper-partynameFilterRepeater-filterDomain-entityNameNumberLookupBox-partyNameHeader'
     try {
-        await checkRightPage(companyName, searchPageElement)
-        await removeOption(false);
+        await checkRightPage(companyName, searchPageElement) // moved removeOption to inside checkRightPage function
     } catch {
         return;
     }
 
-    await new Promise(resolve => setTimeout(resolve, 500)) // Need to slow down between 2nd click and calling additional functions.
     let select = document.getElementById('FilingType');
     if (!fileTypeFilters.includes("All")) {
         await selectValues(fileTypeFilters, select);
@@ -122,14 +120,15 @@ async function searchPageProcess(companyName, fileTypeFilters, modeType, fromDat
 
     if (fromDate !== '') {
         fromDateElement.value = fromDate;
-        console.log(`set fromdate value ${fromDate}`)
+        console.log(`Set From Date value to: ${fromDate}`)
     }    
     if (fromDate !== '' && toDate !== '') {
         toDateElement.value = toDate;
-        console.log(`set toDate value ${toDate}`)
+        console.log(`Set To Date value to: ${toDate}`)
     } else if (fromDate!== '' && toDate === '') {
         let todayDate = formatDate(new Date(today.getDate()))
         toDateElement.value = todayDate
+        console.log(`Set To Date value to: ${todayDate}`)
     }
     await new Promise(resolve => setTimeout(resolve, 500))
     const searchButton = document.querySelector(".appButton.searchDocuments-tabs-criteriaAndButtons-buttonPad2-search.appButtonPrimary.appSearchButton.appSubmitButton.appPrimaryButton.appNotReadOnly.appIndex1");
@@ -138,54 +137,25 @@ async function searchPageProcess(companyName, fileTypeFilters, modeType, fromDat
     }
     await waitForElementToDisappear('catProcessing')
 
-    let sort = await sortClassify()
+    let dateTitleElement = document.querySelector('.appTblCell.appTblCell3.appTblCellOdd.searchDocuments-tabs-criteriaAndButtons-results-page-csaFilingDocuments-SubmissionDateBox');
+    let sort = dateTitleElement.getAttribute('aria-sort');
+    // console.log(`TEST sort order: ${sort}`)
     if (sort === 'descending') {
-
+        // do nothing
     } else if (sort === 'ascending') {
+        console.log(`Clicking clickSort once`)
         await clickSort(1);
-    } else if (sort === 'unordered' ) {
+    } else if (sort === 'none' ) {
+        console.log(`Clicking clickSort twice`)
         await clickSort(2);
     } 
     
     if (modeType !== "Regular") {
+        // console.log(`TEST running processFileTypes`)
         await processFileTypes(modeType, fileTypeFilters, pFromDate);
     }
     chrome.storage.local.set({ searchRequested: false })
     console.log("Finished Processing")
-}
-
-async function sortClassify() {
-    let numTime = [];
-    let diffList = [];
-    let dateElements = '.appAttrDateTime .appAttrValue span[aria-hidden="true"]';
-    let elements = document.querySelectorAll(dateElements);
-    for (let i = 0; i < elements.length; i++) {
-        let date = elements[i]
-        let datetext = date ? date.textContent : 'NA'
-        let dateParts = datetext.includes('-') ? datetext.split('-') : datetext.split(' ');
-        let year = dateParts[2];
-        let month = new Date(dateParts[1] + ' 1, 2012').getMonth();
-        let day = dateParts[0];
-        let dateobj = new Date(year, month, day);
-        let num = dateobj.getTime();
-        numTime.push(num);
-    }
-
-    for (let i = 0; i < numTime.length - 1; i++) {
-    let diff = numTime[i] - numTime[i+1]
-    diffList.push(diff)
-    }
-
-    let allPositive = diffList.every(num => num >= 0);
-    let allNegative = diffList.every(num => num <= 0);
-
-    if (allPositive) {
-        return 'descending'
-    } else if (allNegative) {
-        return 'ascending'
-    } else {
-        return 'unordered'
-    }
 }
 
 async function clickSort(n) {
@@ -195,9 +165,12 @@ async function clickSort(n) {
         let oldDate = document.querySelector('.appAttrDateTime .appAttrValue span[aria-hidden="true"]').textContent;
         console.log(`Sorting List. Clicking...${i + 1}`)
         matchingElement.click();
+        await new Promise(resolve => {setTimeout(resolve, 750)}) // Slowing down
         await new Promise(resolve => {
             const intervalId = setInterval(() => {
+                console.log(`TEST oldDate ${oldDate}`)
                 let newDate = document.querySelector('.appAttrDateTime .appAttrValue span[aria-hidden="true"]').textContent;
+                console.log(`TEST NewDate ${newDate}`)
                 if (newDate !== oldDate) {
                     clearInterval(intervalId);
                     resolve();
@@ -371,18 +344,18 @@ async function grabLinks(page, pFromDate) {
 }
 
 async function removeOption(singleMode) {
-    let removeButtons = document.querySelectorAll(
-        ".select2-selection__choice__remove"
-    )
+    let removeButtons = document.querySelectorAll(".select2-selection__choice__remove")
     
     if (removeButtons.length === 0) {
         return;
     } else {
         let n = singleMode ? 1 : removeButtons.length;
         for (i = 0; i < n; i++ ) {
-            let button = removeButtons[i]
+            let removeButtons = document.querySelectorAll(".select2-selection__choice__remove") // have to double it otherwise button click doesn't work reliably.
+            let button = removeButtons[0]
             button.click()
-            await waitForElementToDisappear('catProcessing') 
+            await waitForElementToDisappear('catProcessing')
+            // await new Promise(resolve => setTimeout(resolve, 750)) // gotta slow down the loop to wait for site response.
         }
     }
     const searchButton = document.querySelector(".appButton.searchDocuments-tabs-criteriaAndButtons-buttonPad2-search.appButtonPrimary.appSearchButton.appSubmitButton.appPrimaryButton.appNotReadOnly.appIndex1");
@@ -435,10 +408,11 @@ function waitForElementToDisappear(elementId) {
 
 
 async function checkRightPage(companyName, elementId) {
-    return new Promise((resolve, reject) => {
+    return new Promise(async (resolve, reject) => {
         let element = document.querySelector(elementId)
         let name = element ? element.textContent.toLowerCase() : "Not Found"
         if (name.includes(companyName.toLowerCase())) {
+            await removeOption(false);
             resolve();
         } else {
             chrome.runtime.sendMessage({action: 'need_restart'});
