@@ -143,10 +143,10 @@ async function searchPageProcess(companyName, fileTypeFilters, modeType, fromDat
     if (sort === 'descending') {
         // do nothing
     } else if (sort === 'ascending') {
-        console.log(`Clicking clickSort once`)
+        console.log(`Ascending. Clicking clickSort once`)
         await clickSort(1);
     } else if (sort === 'none' ) {
-        console.log(`Clicking clickSort twice`)
+        console.log(`Unordered list. Clicking clickSort twice.`)
         await clickSort(2);
     } 
     

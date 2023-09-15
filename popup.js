@@ -174,7 +174,7 @@ function performSearch() {
     pFromDate = processDate(fromDate)
     pToDate = processDate(toDate)
   }
-  console.log(`TEST ${fromDate} ${toDate} ${pFromDate} ${pToDate}`)
+  // console.log(`TEST ${fromDate} ${toDate} ${pFromDate} ${pToDate}`)
   
   console.log(`Search Request Received.`);
   chrome.storage.local.clear();
