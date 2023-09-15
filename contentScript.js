@@ -229,6 +229,7 @@ async function grabDocument(date, text) {
 
     let errorElement = document.querySelector(".appSearchNoResults")
     if (errorElement) {
+        console.log("Sedar date filter error. Attempting a workaround.")
         let errorText = errorElement.textContent
         if (errorText.includes('no search results')) {
             let fromDate = prevNextDay(slashDate, 'prev')

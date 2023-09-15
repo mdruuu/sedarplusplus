@@ -108,6 +108,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     linkTableStatPane = statusPane.innerHTML
     statusPane.innerHTML = ''
     console.log("Fetching Doc. Please wait.")
+    chrome.storage.local.set({ statusPane: linkTableStatPane })    
     setTimeout(() => {
       let statPaneContent = statusPane.innerHTML
       if (!statPaneContent.includes("Fetching Doc")) {
@@ -116,7 +117,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         console.log("Error while downloading. Please try again. Contact developer if issue persists. Reverting to Links in 3 seconds.")
         setTimeout(() => {
           statusPane.innerHTML = linkTableStatPane
-          chrome.storage.set({ statusPane: linkTableStatPane})
+          chrome.storage.local.set({ statusPane: linkTableStatPane})
         }, 3000)
       }
     }, 7500)
