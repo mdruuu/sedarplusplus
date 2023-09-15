@@ -294,8 +294,8 @@ async function downloadDocSimple(pFromDate) {
         // let rowYear = date.getFullYear();
         // let cutoffYear = fromDate.getFullYear();
         if (rowDate >= pFromDate) {
-            console.log(`Downloading: ${linkName} Date: ${rowDate}`)
-            // linkElement.click();
+            // console.log(`Downloading: ${linkName} Date: ${rowDate}`)
+            linkElement.click();
             clickNextPage = 'Yes'
         } else {
             clickNextPage = 'No'
