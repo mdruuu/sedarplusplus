@@ -7,8 +7,7 @@ console.log = function (message) {
 
 
 // let searchRequested, companyName, fileTypeFilters, modeType , fromDate, toDate, pFromDate, page, title
-const fromDateElement = document.querySelector('#DocumentDate')
-const toDateElement = document.querySelector('#DocumentDate2')
+
 
 chrome.runtime.onMessage.addListener(async (request, sender, sendResponse) => {
     if (request.action === 'refresh') {
@@ -118,21 +117,27 @@ async function searchPageProcess(companyName, fileTypeFilters, modeType, fromDat
     if (!fileTypeFilters.includes("All")) {
         await selectValues(fileTypeFilters, select);
     };
-    
-    console.log(fromDateElement, toDateElement)
+    const fromDateElement = document.querySelector('#DocumentDate')
+    const toDateElement = document.querySelector('#DocumentDate2')
+
     if (fromDate !== '') {
         fromDateElement.value = fromDate;
         console.log(`set fromdate value ${fromDate}`)
     }    
-    if (toDate !== '') {
+    if (fromDate !== '' && toDate !== '') {
         toDateElement.value = toDate;
         console.log(`set toDate value ${toDate}`)
+    } else if (fromDate!== '' && toDate === '') {
+        let todayDate = formatDate(new Date(today.getDate()))
+        toDateElement.value = todayDate
     }
+    await new Promise(resolve => setTimeout(resolve, 500))
     const searchButton = document.querySelector(".appButton.searchDocuments-tabs-criteriaAndButtons-buttonPad2-search.appButtonPrimary.appSearchButton.appSubmitButton.appPrimaryButton.appNotReadOnly.appIndex1");
     if (searchButton) {
         searchButton.click();
     }
     await waitForElementToDisappear('catProcessing')
+
     let sort = await sortClassify()
     if (sort === 'descending') {
 
@@ -141,6 +146,7 @@ async function searchPageProcess(companyName, fileTypeFilters, modeType, fromDat
     } else if (sort === 'unordered' ) {
         await clickSort(2);
     } 
+    
     if (modeType !== "Regular") {
         await processFileTypes(modeType, fileTypeFilters, pFromDate);
     }
@@ -210,6 +216,9 @@ async function grabDocument(date, text) {
     let parts = date.split(' ');
     let months = {Jan: '01', Feb: '02', Mar: '03', Apr: '04', May: '05', Jun: '06', Jul: '07', Aug: '08', Sep: '09', Oct: '10', Nov: '11', Dec: '12'};
     date = parts[0] + '/' + months[parts[1]] + '/' + parts[2];
+
+    const fromDateElement = document.querySelector('#DocumentDate')
+    const toDateElement = document.querySelector('#DocumentDate2')
 
     fromDateElement.value = date;
     toDateElement.value = date;
@@ -352,15 +361,14 @@ async function removeOption(singleMode) {
         for (i = 0; i < n; i++ ) {
             let button = removeButtons[i]
             button.click()
-            await waitForElementToDisappear('catProcessing')
+            await waitForElementToDisappear('catProcessing') 
         }
     }
     const searchButton = document.querySelector(".appButton.searchDocuments-tabs-criteriaAndButtons-buttonPad2-search.appButtonPrimary.appSearchButton.appSubmitButton.appPrimaryButton.appNotReadOnly.appIndex1");
     if (searchButton) {
         searchButton.click();
-        console.log('Filter Search Button Clicked.');
     }
-    await waitForElementToDisappear('catProcessing') // switched from waiting for 4 seconds
+    await waitForElementToDisappear('catProcessing') 
 }
 
 async function selectValues(values, select) {
@@ -419,7 +427,12 @@ async function checkRightPage(companyName, elementId) {
 }
 
 
-
+function formatDate(date) {
+  let day = String(date.getDate()).padStart(2, '0');
+  let month = String(date.getMonth() + 1).padStart(2, '0'); // Months are 0-based
+  let year = date.getFullYear();
+  return `${day}/${month}/${year}`;
+}
 
 
 

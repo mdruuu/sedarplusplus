@@ -248,7 +248,7 @@ function parseDates(input) {
 
   return {
     fromDate: formatDate(fromDate),
-    toDate: toDate ? formatDate(toDate) : ''
+    toDate: toDate ? formatDate(toDate) : '',
   };
 }
 
