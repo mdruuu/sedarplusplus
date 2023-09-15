@@ -160,18 +160,19 @@ async function searchPageProcess(companyName, fileTypeFilters, modeType, fromDat
 
 async function clickSort(n) {
     for (i = 0; i < n; i++) {
+        let dateTitleSelector = '.appTblCell.appTblCell3.appTblCellOdd.searchDocuments-tabs-criteriaAndButtons-results-page-csaFilingDocuments-SubmissionDateBox'
+        let dateTitleElement = document.querySelector(dateTitleSelector);
+        let oldSort = dateTitleElement.getAttribute('aria-sort');
         let  xpath = "//a[.//span[contains(text(), 'Submitted date')]]";
         let matchingElement = document.evaluate(xpath, document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null).singleNodeValue;
-        let oldDate = document.querySelector('.appAttrDateTime .appAttrValue span[aria-hidden="true"]').textContent;
         console.log(`Sorting List. Clicking...${i + 1}`)
         matchingElement.click();
         await new Promise(resolve => {setTimeout(resolve, 750)}) // Slowing down
         await new Promise(resolve => {
             const intervalId = setInterval(() => {
-                console.log(`TEST oldDate ${oldDate}`)
-                let newDate = document.querySelector('.appAttrDateTime .appAttrValue span[aria-hidden="true"]').textContent;
-                console.log(`TEST NewDate ${newDate}`)
-                if (newDate !== oldDate) {
+                let dateTitleElement = document.querySelector(dateTitleSelector);
+                let newSort = dateTitleElement.getAttribute('aria-sort');
+                if (newSort !== oldSort) {
                     clearInterval(intervalId);
                     resolve();
                 }
