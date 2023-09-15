@@ -155,17 +155,25 @@ document.addEventListener('click', function(e) {
 //FUNCTIONS 
 function performSearch() {
   statusPaneElement.innerHTML = '';
+  let dateString = dateElement.value
+
   selectedModeButton = modeButtonElement.querySelector('.mode-button.selected')
-  if (selectedModeButton.value !== "Regular" && !dateElement.value.trim()) {
+  if (selectedModeButton.value !== "Regular" && !dateString.trim()) {
     console.log("Specify Date. Hit Reset to see instruction.")
     return;
   }
-  let dateString = dateElement.value
-  let parsedDate = parseDates(dateString)
-  let fromDate = parsedDate.fromDate
-  let toDate = parsedDate.toDate
-  pFromDate = processDate(fromDate)
-  pToDate = processDate(toDate)
+  if (!dateString.trim()) {
+    fromDate = ''
+    toDate = ''
+    pFromDate = ''
+    pToDate = ''
+  } else {
+    let parsedDate = parseDates(dateString)
+    let fromDate = parsedDate.fromDate
+    let toDate = parsedDate.toDate
+    pFromDate = processDate(fromDate)
+    pToDate = processDate(toDate)
+  }
   
   console.log(`Search Request Received.`);
   chrome.storage.local.clear();
